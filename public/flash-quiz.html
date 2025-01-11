@@ -35,19 +35,29 @@
         }
 
         .ticker {
-            font-size: 72px;
+            font-size: 96px;
             font-weight: bold;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
 
         .company-name {
-            font-size: 36px;
-            margin-bottom: 15px;
+            font-size: 48px;
+            margin-bottom: 25px;
         }
 
         .info {
-            font-size: 24px;
+            font-size: 28px;
             color: #666;
+            margin-bottom: 20px;
+        }
+
+        .description {
+            font-size: 24px;
+            color: #444;
+            font-style: italic;
+            max-width: 800px;
+            margin: 20px auto;
+            line-height: 1.4;
         }
 
         .quiz-container {
@@ -212,6 +222,7 @@
             <div class="ticker"></div>
             <div class="company-name"></div>
             <div class="info"></div>
+            <div class="description"></div>
         </div>
         
         <div class="quiz-container" id="quizContainer">
@@ -256,8 +267,15 @@
         let timeLeft = 0;
         
         let settings = {
-            flashDuration: 1000, // milliseconds
-            answerDuration: 5 // seconds
+            flashDuration: 2000,    // 2 seconds minimum for showing data
+            answerDuration: 2,      // 2 seconds minimum for answering
+            questionInterval: 3     // Show a question after every 3 data cards maximum
+        };
+
+        let state = {
+            dataCardsShown: 0,     // Track consecutive data cards
+            isShowingData: false,  // Track current display state
+            isProcessing: false    // Prevent overlapping transitions
         };
 
         // Add new variables for spaced repetition
@@ -335,85 +353,95 @@
             return history;
         }
 
-        function showFlashCard(questionItem) {
+        async function showFlashCard(questionItem) {
+            if (state.isProcessing) return;
+            state.isProcessing = true;
+            state.isShowingData = true;
+            
             const flashCard = document.getElementById('flashCard');
             const quizContainer = document.getElementById('quizContainer');
             
             flashCard.style.display = 'flex';
             quizContainer.style.display = 'none';
 
-            // Show different information based on question type
-            let displayInfo = '';
-            switch (questionItem.type) {
-                case 'ticker':
-                    displayInfo = `${questionItem.stock.symbol}`;
-                    break;
-                case 'company':
-                    displayInfo = `${questionItem.stock.name}`;
-                    break;
-                case 'sector':
-                    displayInfo = `${questionItem.stock.sector}`;
-                    break;
-                case 'industry':
-                    displayInfo = `${questionItem.stock.industry}`;
-                    break;
-            }
-            
-            flashCard.querySelector('.ticker').textContent = displayInfo;
+            // Display data
+            flashCard.querySelector('.ticker').textContent = questionItem.stock.symbol;
             flashCard.querySelector('.company-name').textContent = questionItem.stock.name;
             flashCard.querySelector('.info').textContent = 
                 `${questionItem.stock.sector} | ${questionItem.stock.industry}`;
+            
+            // Show description
+            const description = questionItem.stock.description || '';
+            const snippet = getDescriptionSnippet(description);
+            flashCard.querySelector('.description').textContent = snippet;
 
-            setTimeout(() => showQuiz(questionItem), settings.flashDuration);
+            // Enforce minimum display time
+            await new Promise(resolve => setTimeout(resolve, settings.flashDuration));
+            
+            state.dataCardsShown++;
+            state.isShowingData = false;
+            state.isProcessing = false;
+
+            // Force a question if we've shown too many data cards
+            if (state.dataCardsShown >= settings.questionInterval) {
+                showQuiz(questionItem);
+                state.dataCardsShown = 0;
+            } else {
+                showQuiz(questionItem);
+            }
         }
 
-        function showQuiz(questionItem) {
+        function getDescriptionSnippet(description) {
+            const snippetLength = 150;
+            if (description.length > snippetLength * 2) {
+                const startPos = Math.floor(description.length / 2) - Math.floor(snippetLength / 2);
+                return '...' + description.substr(startPos, snippetLength) + '...';
+            }
+            return description;
+        }
+
+        async function showQuiz(questionItem) {
+            if (state.isProcessing) return;
+            state.isProcessing = true;
+            
             const flashCard = document.getElementById('flashCard');
             const quizContainer = document.getElementById('quizContainer');
             
             flashCard.style.display = 'none';
             quizContainer.style.display = 'block';
             
-            let questionText;
-            let correctAnswer;
-            
-            switch (questionItem.type) {
-                case 'ticker':
-                    questionText = `What company uses the ticker ${questionItem.stock.symbol}?`;
-                    correctAnswer = questionItem.stock.name;
-                    break;
-                case 'company':
-                    questionText = `What's the ticker for ${questionItem.stock.name}?`;
-                    correctAnswer = questionItem.stock.symbol;
-                    break;
-                case 'sector':
-                    questionText = `Which sector does ${questionItem.stock.name} belong to?`;
-                    correctAnswer = questionItem.stock.sector;
-                    break;
-                case 'industry':
-                    questionText = `What industry is ${questionItem.stock.name} in?`;
-                    correctAnswer = questionItem.stock.industry;
-                    break;
-            }
-
+            const { questionText, correctAnswer } = generateQuestion(questionItem);
             document.getElementById('question').textContent = questionText;
             
-            const wrongOptions = getRandomStocks(3, questionItem.stock).map(s => {
-                switch (questionItem.type) {
-                    case 'ticker': return s.name;
-                    case 'company': return s.symbol;
-                    case 'sector': return s.sector;
-                    case 'industry': return s.industry;
-                }
-            });
-            
-            const options = shuffle([correctAnswer, ...wrongOptions]);
-            const optionsContainer = document.getElementById('options');
-            optionsContainer.innerHTML = options.map(option => 
-                `<button class="option-button" onclick="checkAnswer('${option}', '${correctAnswer}', '${questionItem.id}')">${option}</button>`
-            ).join('');
+            const options = generateOptions(questionItem, correctAnswer);
+            displayOptions(options, correctAnswer, questionItem.id);
 
             startTimer();
+            state.isProcessing = false;
+        }
+
+        function generateQuestion(questionItem) {
+            const questionTypes = {
+                ticker: () => ({
+                    text: `What company uses the ticker ${questionItem.stock.symbol}?`,
+                    answer: questionItem.stock.name
+                }),
+                company: () => ({
+                    text: `What's the ticker for ${questionItem.stock.name}?`,
+                    answer: questionItem.stock.symbol
+                }),
+                sector: () => ({
+                    text: `Which sector does ${questionItem.stock.name} belong to?`,
+                    answer: questionItem.stock.sector
+                }),
+                industry: () => ({
+                    text: `What industry is ${questionItem.stock.name} in?`,
+                    answer: questionItem.stock.industry
+                })
+            };
+
+            const { text, answer } = questionTypes[questionItem.type]();
+            return { questionText: text, correctAnswer: answer };
         }
 
         function startTimer() {
@@ -426,7 +454,10 @@
                 if (timeLeft <= 0) {
                     streak = 0;
                     updateStreak();
-                    nextQuestion();
+                    // Add delay before next question
+                    setTimeout(() => {
+                        nextQuestion();
+                    }, 1000);
                 }
             }, 1000);
         }
@@ -451,14 +482,11 @@
             
             updateStreak();
             
-            // Update learning history and schedule next review
             const history = updateLearningHistory(questionId, isCorrect);
             const nextInterval = REVIEW_INTERVALS[history.level];
             
-            // Find current question
             const currentQuestion = questionQueue.find(q => q.id === questionId);
             
-            // Add question back to queue with appropriate delay
             if (currentQuestion) {
                 addToQueue({
                     type: currentQuestion.type,
@@ -467,7 +495,10 @@
                 });
             }
 
-            nextQuestion();
+            // Add delay before next question
+            setTimeout(() => {
+                nextQuestion();
+            }, 1000); // 1 second delay between questions
         }
 
         function nextQuestion() {
@@ -531,6 +562,27 @@
 
         document.getElementById('flashDuration').addEventListener('input', updateSettingsDisplays);
         document.getElementById('answerDuration').addEventListener('input', updateSettingsDisplays);
+
+        // Add missing functions for multiple choice
+        function generateOptions(questionItem, correctAnswer) {
+            const wrongOptions = getRandomStocks(3, questionItem.stock).map(s => {
+                switch (questionItem.type) {
+                    case 'ticker': return s.name;
+                    case 'company': return s.symbol;
+                    case 'sector': return s.sector;
+                    case 'industry': return s.industry;
+                }
+            });
+            
+            return shuffle([correctAnswer, ...wrongOptions]);
+        }
+
+        function displayOptions(options, correctAnswer, questionId) {
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = options.map(option => 
+                `<button class="option-button" onclick="checkAnswer('${option}', '${correctAnswer}', '${questionId}')">${option}</button>`
+            ).join('');
+        }
 
         loadStocks();
     </script>
