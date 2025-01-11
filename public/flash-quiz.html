@@ -249,8 +249,8 @@
         
         <div class="settings-group">
             <label for="answerDuration">Answer Time Limit (seconds)</label>
-            <input type="range" id="answerDuration" min="3" max="15" step="1" value="5">
-            <div class="value-display" id="answerDurationValue">5s</div>
+            <input type="range" id="answerDuration" min="2" max="15" step="1" value="2">
+            <div class="value-display" id="answerDurationValue">2s</div>
         </div>
         
         <div class="modal-buttons">
@@ -268,7 +268,7 @@
         
         let settings = {
             flashDuration: 2000,    // 2 seconds minimum for showing data
-            answerDuration: 2,      // 2 seconds minimum for answering
+            answerDuration: 2000,   // 2 seconds minimum for answering (in milliseconds)
             questionInterval: 3     // Show a question after every 3 data cards maximum
         };
 
@@ -445,7 +445,7 @@
         }
 
         function startTimer() {
-            timeLeft = settings.answerDuration;
+            timeLeft = Math.floor(settings.answerDuration / 1000);
             updateTimer();
             if (timer) clearInterval(timer);
             timer = setInterval(() => {
@@ -454,7 +454,6 @@
                 if (timeLeft <= 0) {
                     streak = 0;
                     updateStreak();
-                    // Add delay before next question
                     setTimeout(() => {
                         nextQuestion();
                     }, 1000);
@@ -546,7 +545,7 @@
 
         function saveSettings() {
             settings.flashDuration = parseFloat(document.getElementById('flashDuration').value) * 1000;
-            settings.answerDuration = parseInt(document.getElementById('answerDuration').value);
+            settings.answerDuration = parseInt(document.getElementById('answerDuration').value) * 1000;
             closeSettings();
         }
 
