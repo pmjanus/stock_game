@@ -1,0 +1,23 @@
+# First ignore everything
+*
+*/*
+
+# Then allow specific directories and files
+!public/
+!public/index.html
+!public/flash-quiz.html
+
+!server.js
+!package.json
+!.gitignore
+
+# Ignore node_modules even if inside allowed directories
+node_modules/
+**/node_modules/
+
+# Ignore the generated stocks data file since it can be recreated
+stocks.json
+
+# Ignore environment files
+.env
+.env.*

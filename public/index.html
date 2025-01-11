@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Market Learning Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .game-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .score {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        .question {
+            font-size: 1.1em;
+            margin-bottom: 15px;
+        }
+        input[type="text"] {
+            padding: 8px;
+            font-size: 1em;
+            margin-right: 10px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .answer-history {
+            margin-top: 20px;
+            display: flex;  
+            gap: 20px;
+        }
+        
+        .history-column {
+            flex: 1;
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .correct {
+            background-color: #e8f5e9;
+        }
+        
+        .incorrect {
+            background-color: #ffebee;
+        }
+        
+        .company-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e3f2fd;
+            border-radius: 8px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .show-answer {
+            background-color: #ff9800;
+            margin-left: 10px;
+        }
+        
+        .history-item {
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .category-explorer {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .category-list {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .category-item {
+            margin: 5px 0;
+            padding: 5px;
+            cursor: pointer;
+        }
+
+        .category-item:hover {
+            background-color: #e9ecef;
+        }
+
+        .stock-list {
+            margin-left: 20px;
+            font-size: 0.9em;
+        }
+
+        .category-toggle {
+            background-color: #6c757d;
+            margin-top: 20px;
+        }
+
+        .nav-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background-color 0.3s;
+        }
+
+        .nav-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Stock Market Learning Game</h1>
+        <div class="score">Score: <span id="score">0</span></div>
+        <div class="question" id="question"></div>
+        <input type="text" id="answer" placeholder="Enter ticker symbol">
+        <button onclick="checkAnswer()">Submit</button>
+        <button onclick="showAnswer()" class="show-answer">Show Answer</button>
+        
+        <div class="company-info hidden" id="companyInfo">
+            <h3>Company Information</h3>
+            <p id="companyDescription"></p>
+            <a id="yahooLink" href="#" target="_blank">View on Yahoo Finance</a>
+        </div>
+
+        <div class="answer-history">
+            <div class="history-column">
+                <h3>Correct Answers</h3>
+                <div id="correctAnswers"></div>
+            </div>
+            <div class="history-column">
+                <h3>Incorrect Answers</h3>
+                <div id="incorrectAnswers"></div>
+            </div>
+        </div>
+
+        <button onclick="toggleCategoryExplorer()" class="category-toggle">
+            Toggle Category Explorer
+        </button>
+
+        <div class="category-explorer hidden" id="categoryExplorer">
+            <h3>Category Explorer</h3>
+            <div class="tabs">
+                <button onclick="showCategoryView('sector')">By Sector</button>
+                <button onclick="showCategoryView('industry')">By Industry</button>
+            </div>
+            <div id="categoryList" class="category-list"></div>
+        </div>
+    </div>
+
+    <button onclick="window.location.href='/flash-quiz'" class="nav-button">
+        Switch to Flash Quiz Mode
+    </button>
+
+    <script>
+        let stockData = [];
+        let currentQuestion = null;
+        let score = 0;
+        const correctAnswers = [];
+        const incorrectAnswers = [];
+        let currentCategoryView = 'sector';
+
+        // Fetch stock data from local JSON file
+        async function fetchStockData() {
+            try {
+                const response = await fetch('stocks.json');
+                stockData = await response.json();
+                generateQuestion();
+            } catch (error) {
+                console.error('Error fetching stock data:', error);
+            }
+        }
+
+        function generateQuestion() {
+            const questionTypes = [
+                'company',
+                'sector',
+                'industry'
+            ];
+            
+            const type = questionTypes[Math.floor(Math.random() * questionTypes.length)];
+            const stock = stockData[Math.floor(Math.random() * stockData.length)];
+            
+            currentQuestion = {
+                type,
+                stock,
+                answer: stock.symbol
+            };
+
+            let questionText = '';
+            switch(type) {
+                case 'company':
+                    questionText = `What's the ticker symbol for ${stock.name}?`;
+                    break;
+                case 'sector':
+                    questionText = `Name a company in the ${stock.sector} sector:`;
+                    break;
+                case 'industry':
+                    questionText = `Name a company in the ${stock.industry} industry:`;
+                    break;
+            }
+
+            document.getElementById('question').textContent = questionText;
+            document.getElementById('answer').value = '';
+        }
+
+        function showAnswer() {
+            const answer = currentQuestion.answer;
+            alert(`The correct answer is: ${answer}`);
+            updateCompanyInfo(currentQuestion.stock);
+        }
+
+        function updateCompanyInfo(stock) {
+            const companyInfo = document.getElementById('companyInfo');
+            const companyDescription = document.getElementById('companyDescription');
+            const yahooLink = document.getElementById('yahooLink');
+            
+            companyDescription.textContent = stock.description || 'No description available.';
+            yahooLink.href = `https://finance.yahoo.com/quote/${stock.symbol}`;
+            
+            companyInfo.classList.remove('hidden');
+        }
+
+        function addToHistory(correct, userAnswer, stock) {
+            const historyItem = document.createElement('div');
+            historyItem.className = `history-item ${correct ? 'correct' : 'incorrect'}`;
+            
+            const questionText = currentQuestion.type === 'company' 
+                ? `${stock.name}`
+                : `${currentQuestion.type}: ${currentQuestion.type === 'sector' ? stock.sector : stock.industry}`;
+            
+            historyItem.innerHTML = `
+                <strong>${questionText}</strong><br>
+                Your answer: ${userAnswer}<br>
+                Correct: ${currentQuestion.type === 'company' ? stock.symbol : 'Any valid ticker in category'}
+            `;
+            
+            if (correct) {
+                document.getElementById('correctAnswers').prepend(historyItem);
+                correctAnswers.push({ question: questionText, answer: userAnswer });
+            } else {
+                document.getElementById('incorrectAnswers').prepend(historyItem);
+                incorrectAnswers.push({ question: questionText, answer: userAnswer });
+            }
+        }
+
+        function toggleCategoryExplorer() {
+            const explorer = document.getElementById('categoryExplorer');
+            explorer.classList.toggle('hidden');
+            if (!explorer.classList.contains('hidden')) {
+                showCategoryView(currentCategoryView);
+            }
+        }
+
+        function showCategoryView(type) {
+            currentCategoryView = type;
+            const categoryList = document.getElementById('categoryList');
+            const categories = new Map();
+
+            // Group stocks by category
+            stockData.forEach(stock => {
+                const category = type === 'sector' ? stock.sector : stock.industry;
+                if (!categories.has(category)) {
+                    categories.set(category, []);
+                }
+                categories.get(category).push(stock);
+            });
+
+            // Sort categories alphabetically
+            const sortedCategories = Array.from(categories.entries()).sort((a, b) => 
+                a[0].localeCompare(b[0])
+            );
+
+            // Generate HTML
+            categoryList.innerHTML = sortedCategories.map(([category, stocks]) => `
+                <div class="category-item">
+                    <strong onclick="toggleStockList('${category}')">${category} (${stocks.length})</strong>
+                    <div id="stocks-${category.replace(/\s+/g, '-')}" class="stock-list hidden">
+                        ${stocks.map(stock => `
+                            <div>
+                                ${stock.symbol} - ${stock.name}
+                                <a href="https://finance.yahoo.com/quote/${stock.symbol}" target="_blank">🔗</a>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleStockList(category) {
+            const stockList = document.getElementById(`stocks-${category.replace(/\s+/g, '-')}`);
+            stockList.classList.toggle('hidden');
+        }
+
+        function checkAnswer() {
+            const userAnswer = document.getElementById('answer').value.toUpperCase();
+            
+            let correct = false;
+            if (currentQuestion.type === 'company') {
+                correct = userAnswer === currentQuestion.answer;
+            } else {
+                const correctStocks = stockData.filter(stock => 
+                    currentQuestion.type === 'sector' ? 
+                        stock.sector === currentQuestion.stock.sector :
+                        stock.industry === currentQuestion.stock.industry
+                );
+                correct = correctStocks.some(stock => stock.symbol === userAnswer);
+            }
+
+            if (correct) {
+                score += 10;
+                document.getElementById('score').textContent = score;
+                alert('Correct! +10 points');
+            } else {
+                alert('Incorrect! Try again');
+                // Show category explorer with relevant category
+                const explorer = document.getElementById('categoryExplorer');
+                explorer.classList.remove('hidden');
+                showCategoryView(currentQuestion.type);
+                // Expand the relevant category
+                if (currentQuestion.type !== 'company') {
+                    const category = currentQuestion.type === 'sector' ? 
+                        currentQuestion.stock.sector : 
+                        currentQuestion.stock.industry;
+                    setTimeout(() => toggleStockList(category), 100);
+                }
+            }
+
+            addToHistory(correct, userAnswer, currentQuestion.stock);
+            updateCompanyInfo(currentQuestion.stock);
+            generateQuestion();
+        }
+
+        // Initialize the game
+        fetchStockData();
+    </script>
+</body>
+</html>

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Flash Quiz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f2f5;
+            min-height: 100vh;
+        }
+
+        .flash-container {
+            width: 90%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        .flash-card {
+            background-color: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .ticker {
+            font-size: 72px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .company-name {
+            font-size: 36px;
+            margin-bottom: 15px;
+        }
+
+        .info {
+            font-size: 24px;
+            color: #666;
+        }
+
+        .quiz-container {
+            display: none;
+            width: 100%;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .option-button {
+            padding: 20px;
+            font-size: 20px;
+            border: none;
+            border-radius: 8px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .option-button:hover {
+            background-color: #0056b3;
+        }
+
+        .timer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .streak {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background-color 0.3s;
+        }
+
+        .nav-button:hover {
+            background-color: #45a049;
+        }
+
+        .settings-button {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 15px 25px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .settings-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 1000;
+            min-width: 300px;
+        }
+
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
+        .settings-group {
+            margin: 15px 0;
+        }
+
+        .settings-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .settings-group input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 5px;
+        }
+
+        .settings-group .value-display {
+            text-align: center;
+            color: #666;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .save-button {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .cancel-button {
+            background-color: #dc3545;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="streak">Streak: <span id="streakCount">0</span></div>
+    <div class="timer">Time: <span id="timeLeft">5</span>s</div>
+    
+    <div class="flash-container">
+        <div class="flash-card" id="flashCard">
+            <div class="ticker"></div>
+            <div class="company-name"></div>
+            <div class="info"></div>
+        </div>
+        
+        <div class="quiz-container" id="quizContainer">
+            <h2 id="question"></h2>
+            <div class="options-grid" id="options"></div>
+        </div>
+    </div>
+
+    <button onclick="window.location.href='/'" class="nav-button">
+        Switch to Learning Mode
+    </button>
+
+    <button onclick="openSettings()" class="settings-button">⚙️ Settings</button>
+
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="settings-modal" id="settingsModal">
+        <h2>Quiz Settings</h2>
+        
+        <div class="settings-group">
+            <label for="flashDuration">Flash Card Duration (seconds)</label>
+            <input type="range" id="flashDuration" min="0.5" max="5" step="0.5" value="1">
+            <div class="value-display" id="flashDurationValue">1.0s</div>
+        </div>
+        
+        <div class="settings-group">
+            <label for="answerDuration">Answer Time Limit (seconds)</label>
+            <input type="range" id="answerDuration" min="3" max="15" step="1" value="5">
+            <div class="value-display" id="answerDurationValue">5s</div>
+        </div>
+        
+        <div class="modal-buttons">
+            <button onclick="closeSettings()" class="cancel-button">Cancel</button>
+            <button onclick="saveSettings()" class="save-button">Save</button>
+        </div>
+    </div>
+
+    <script>
+        let stockData = [];
+        let currentStock = null;
+        let streak = 0;
+        let timer = null;
+        let timeLeft = 0;
+        
+        let settings = {
+            flashDuration: 1000, // milliseconds
+            answerDuration: 5 // seconds
+        };
+
+        async function loadStocks() {
+            const response = await fetch('/stocks.json');
+            stockData = await response.json();
+            startQuiz();
+        }
+
+        function getRandomStocks(count, exclude = null) {
+            const stocks = [...stockData];
+            if (exclude) {
+                const index = stocks.findIndex(s => s.symbol === exclude.symbol);
+                if (index > -1) stocks.splice(index, 1);
+            }
+            return shuffle(stocks).slice(0, count);
+        }
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function showFlashCard(stock) {
+            const flashCard = document.getElementById('flashCard');
+            const quizContainer = document.getElementById('quizContainer');
+            
+            flashCard.style.display = 'flex';
+            quizContainer.style.display = 'none';
+            
+            flashCard.querySelector('.ticker').textContent = stock.symbol;
+            flashCard.querySelector('.company-name').textContent = stock.name;
+            flashCard.querySelector('.info').textContent = 
+                `${stock.sector} | ${stock.industry}`;
+
+            setTimeout(() => showQuiz(stock), settings.flashDuration);
+        }
+
+        function showQuiz(stock) {
+            const flashCard = document.getElementById('flashCard');
+            const quizContainer = document.getElementById('quizContainer');
+            
+            flashCard.style.display = 'none';
+            quizContainer.style.display = 'block';
+            
+            const questionTypes = [
+                { text: `Which company uses the ticker ${stock.symbol}?`, answer: stock.name },
+                { text: `What's the ticker for ${stock.name}?`, answer: stock.symbol },
+                { text: `Which sector does ${stock.name} (${stock.symbol}) belong to?`, answer: stock.sector },
+                { text: `What industry is ${stock.name} (${stock.symbol}) in?`, answer: stock.industry }
+            ];
+            
+            const questionType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
+            document.getElementById('question').textContent = questionType.text;
+            
+            const wrongOptions = getRandomStocks(3, stock).map(s => {
+                switch (questionType.text.split(' ')[0]) {
+                    case 'Which': return questionType.text.includes('ticker') ? s.name : s.sector;
+                    case "What's": return s.symbol;
+                    default: return s.industry;
+                }
+            });
+            
+            const options = shuffle([questionType.answer, ...wrongOptions]);
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = options.map(option => 
+                `<button class="option-button" onclick="checkAnswer('${option}', '${questionType.answer}')">${option}</button>`
+            ).join('');
+
+            startTimer();
+        }
+
+        function startTimer() {
+            timeLeft = settings.answerDuration;
+            updateTimer();
+            if (timer) clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                updateTimer();
+                if (timeLeft <= 0) {
+                    streak = 0;
+                    updateStreak();
+                    nextQuestion();
+                }
+            }, 1000);
+        }
+
+        function updateTimer() {
+            document.getElementById('timeLeft').textContent = timeLeft;
+        }
+
+        function updateStreak() {
+            document.getElementById('streakCount').textContent = streak;
+        }
+
+        function checkAnswer(selected, correct) {
+            if (timer) clearInterval(timer);
+            
+            if (selected === correct) {
+                streak++;
+            } else {
+                streak = 0;
+            }
+            
+            updateStreak();
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            const randomStock = stockData[Math.floor(Math.random() * stockData.length)];
+            currentStock = randomStock;
+            showFlashCard(randomStock);
+        }
+
+        function startQuiz() {
+            nextQuestion();
+        }
+
+        function openSettings() {
+            document.getElementById('modalBackdrop').style.display = 'block';
+            document.getElementById('settingsModal').style.display = 'block';
+            
+            document.getElementById('flashDuration').value = settings.flashDuration / 1000;
+            document.getElementById('answerDuration').value = settings.answerDuration;
+            
+            updateSettingsDisplays();
+        }
+
+        function closeSettings() {
+            document.getElementById('modalBackdrop').style.display = 'none';
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function saveSettings() {
+            settings.flashDuration = parseFloat(document.getElementById('flashDuration').value) * 1000;
+            settings.answerDuration = parseInt(document.getElementById('answerDuration').value);
+            closeSettings();
+        }
+
+        function updateSettingsDisplays() {
+            const flashInput = document.getElementById('flashDuration');
+            const answerInput = document.getElementById('answerDuration');
+            
+            document.getElementById('flashDurationValue').textContent = 
+                `${flashInput.value}s`;
+            document.getElementById('answerDurationValue').textContent = 
+                `${answerInput.value}s`;
+        }
+
+        document.getElementById('flashDuration').addEventListener('input', updateSettingsDisplays);
+        document.getElementById('answerDuration').addEventListener('input', updateSettingsDisplays);
+
+        loadStocks();
+    </script>
+</body>
+</html> 
