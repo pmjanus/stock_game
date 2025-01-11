@@ -455,12 +455,17 @@
             const history = updateLearningHistory(questionId, isCorrect);
             const nextInterval = REVIEW_INTERVALS[history.level];
             
-            // Add question back to queue with appropriate delay
+            // Find current question
             const currentQuestion = questionQueue.find(q => q.id === questionId);
-            addToQueue({
-                ...currentQuestion,
-                delay: isCorrect ? nextInterval : 1
-            });
+            
+            // Add question back to queue with appropriate delay
+            if (currentQuestion) {
+                addToQueue({
+                    type: currentQuestion.type,
+                    stock: currentQuestion.stock,
+                    delay: isCorrect ? nextInterval : 1
+                });
+            }
 
             nextQuestion();
         }
@@ -472,13 +477,18 @@
             
             if (readyQuestions.length > 0) {
                 const nextQuestion = readyQuestions[0];
+                // Remove this question from the queue
                 questionQueue = questionQueue.filter(q => q.id !== nextQuestion.id);
                 showFlashCard(nextQuestion);
-            } else {
+            } else if (questionQueue.length > 0) {
                 // If no questions are ready, show the one with the smallest showAfter
                 questionQueue.sort((a, b) => a.showAfter - b.showAfter);
                 const nextQuestion = questionQueue.shift();
                 showFlashCard(nextQuestion);
+            } else {
+                // If queue is empty, reinitialize
+                initializeLearningQueue();
+                nextQuestion();
             }
         }
 
