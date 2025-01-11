@@ -260,6 +260,18 @@
             answerDuration: 5 // seconds
         };
 
+        // Add new variables for spaced repetition
+        let questionQueue = [];
+        let learningHistory = new Map(); // tracks success/failure for each item
+        const REVIEW_INTERVALS = [
+            1,    // Show again immediately
+            3,    // After 3 items
+            7,    // After 7 items
+            15,   // After 15 items
+            30,   // After 30 items
+            60    // After 60 items
+        ];
+
         async function loadStocks() {
             const response = await fetch('/stocks.json');
             stockData = await response.json();
@@ -283,50 +295,122 @@
             return array;
         }
 
-        function showFlashCard(stock) {
+        function initializeLearningQueue() {
+            stockData.forEach(stock => {
+                // Create separate entries for each type of question
+                addToQueue({ type: 'ticker', stock });
+                addToQueue({ type: 'company', stock });
+                addToQueue({ type: 'sector', stock });
+                addToQueue({ type: 'industry', stock });
+            });
+            shuffle(questionQueue);
+        }
+
+        function addToQueue({ type, stock, delay = 0 }) {
+            const questionId = `${stock.symbol}-${type}`;
+            questionQueue.push({
+                id: questionId,
+                type,
+                stock,
+                showAfter: questionQueue.length + delay
+            });
+        }
+
+        function updateLearningHistory(questionId, isCorrect) {
+            const history = learningHistory.get(questionId) || {
+                correctCount: 0,
+                incorrectCount: 0,
+                level: 0
+            };
+
+            if (isCorrect) {
+                history.correctCount++;
+                history.level = Math.min(history.level + 1, REVIEW_INTERVALS.length - 1);
+            } else {
+                history.incorrectCount++;
+                history.level = Math.max(history.level - 1, 0);
+            }
+
+            learningHistory.set(questionId, history);
+            return history;
+        }
+
+        function showFlashCard(questionItem) {
             const flashCard = document.getElementById('flashCard');
             const quizContainer = document.getElementById('quizContainer');
             
             flashCard.style.display = 'flex';
             quizContainer.style.display = 'none';
-            
-            flashCard.querySelector('.ticker').textContent = stock.symbol;
-            flashCard.querySelector('.company-name').textContent = stock.name;
-            flashCard.querySelector('.info').textContent = 
-                `${stock.sector} | ${stock.industry}`;
 
-            setTimeout(() => showQuiz(stock), settings.flashDuration);
+            // Show different information based on question type
+            let displayInfo = '';
+            switch (questionItem.type) {
+                case 'ticker':
+                    displayInfo = `${questionItem.stock.symbol}`;
+                    break;
+                case 'company':
+                    displayInfo = `${questionItem.stock.name}`;
+                    break;
+                case 'sector':
+                    displayInfo = `${questionItem.stock.sector}`;
+                    break;
+                case 'industry':
+                    displayInfo = `${questionItem.stock.industry}`;
+                    break;
+            }
+            
+            flashCard.querySelector('.ticker').textContent = displayInfo;
+            flashCard.querySelector('.company-name').textContent = questionItem.stock.name;
+            flashCard.querySelector('.info').textContent = 
+                `${questionItem.stock.sector} | ${questionItem.stock.industry}`;
+
+            setTimeout(() => showQuiz(questionItem), settings.flashDuration);
         }
 
-        function showQuiz(stock) {
+        function showQuiz(questionItem) {
             const flashCard = document.getElementById('flashCard');
             const quizContainer = document.getElementById('quizContainer');
             
             flashCard.style.display = 'none';
             quizContainer.style.display = 'block';
             
-            const questionTypes = [
-                { text: `Which company uses the ticker ${stock.symbol}?`, answer: stock.name },
-                { text: `What's the ticker for ${stock.name}?`, answer: stock.symbol },
-                { text: `Which sector does ${stock.name} (${stock.symbol}) belong to?`, answer: stock.sector },
-                { text: `What industry is ${stock.name} (${stock.symbol}) in?`, answer: stock.industry }
-            ];
+            let questionText;
+            let correctAnswer;
             
-            const questionType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
-            document.getElementById('question').textContent = questionType.text;
+            switch (questionItem.type) {
+                case 'ticker':
+                    questionText = `What company uses the ticker ${questionItem.stock.symbol}?`;
+                    correctAnswer = questionItem.stock.name;
+                    break;
+                case 'company':
+                    questionText = `What's the ticker for ${questionItem.stock.name}?`;
+                    correctAnswer = questionItem.stock.symbol;
+                    break;
+                case 'sector':
+                    questionText = `Which sector does ${questionItem.stock.name} belong to?`;
+                    correctAnswer = questionItem.stock.sector;
+                    break;
+                case 'industry':
+                    questionText = `What industry is ${questionItem.stock.name} in?`;
+                    correctAnswer = questionItem.stock.industry;
+                    break;
+            }
+
+            document.getElementById('question').textContent = questionText;
             
-            const wrongOptions = getRandomStocks(3, stock).map(s => {
-                switch (questionType.text.split(' ')[0]) {
-                    case 'Which': return questionType.text.includes('ticker') ? s.name : s.sector;
-                    case "What's": return s.symbol;
-                    default: return s.industry;
+            const wrongOptions = getRandomStocks(3, questionItem.stock).map(s => {
+                switch (questionItem.type) {
+                    case 'ticker': return s.name;
+                    case 'company': return s.symbol;
+                    case 'sector': return s.sector;
+                    case 'industry': return s.industry;
                 }
             });
             
-            const options = shuffle([questionType.answer, ...wrongOptions]);
+            const options = shuffle([correctAnswer, ...wrongOptions]);
             const optionsContainer = document.getElementById('options');
             optionsContainer.innerHTML = options.map(option => 
-                `<button class="option-button" onclick="checkAnswer('${option}', '${questionType.answer}')">${option}</button>`
+                `<button class="option-button" onclick="checkAnswer('${option}', '${correctAnswer}', '${questionItem.id}')">${option}</button>`
             ).join('');
 
             startTimer();
@@ -355,26 +439,52 @@
             document.getElementById('streakCount').textContent = streak;
         }
 
-        function checkAnswer(selected, correct) {
+        function checkAnswer(selected, correct, questionId) {
             if (timer) clearInterval(timer);
             
-            if (selected === correct) {
+            const isCorrect = selected === correct;
+            if (isCorrect) {
                 streak++;
             } else {
                 streak = 0;
             }
             
             updateStreak();
+            
+            // Update learning history and schedule next review
+            const history = updateLearningHistory(questionId, isCorrect);
+            const nextInterval = REVIEW_INTERVALS[history.level];
+            
+            // Add question back to queue with appropriate delay
+            const currentQuestion = questionQueue.find(q => q.id === questionId);
+            addToQueue({
+                ...currentQuestion,
+                delay: isCorrect ? nextInterval : 1
+            });
+
             nextQuestion();
         }
 
         function nextQuestion() {
-            const randomStock = stockData[Math.floor(Math.random() * stockData.length)];
-            currentStock = randomStock;
-            showFlashCard(randomStock);
+            // Remove questions that aren't ready yet
+            const currentPosition = questionQueue.length;
+            const readyQuestions = questionQueue.filter(q => q.showAfter <= currentPosition);
+            
+            if (readyQuestions.length > 0) {
+                const nextQuestion = readyQuestions[0];
+                questionQueue = questionQueue.filter(q => q.id !== nextQuestion.id);
+                showFlashCard(nextQuestion);
+            } else {
+                // If no questions are ready, show the one with the smallest showAfter
+                questionQueue.sort((a, b) => a.showAfter - b.showAfter);
+                const nextQuestion = questionQueue.shift();
+                showFlashCard(nextQuestion);
+            }
         }
 
+        // Modify the startQuiz function
         function startQuiz() {
+            initializeLearningQueue();
             nextQuestion();
         }
 
