@@ -123,19 +123,39 @@
             margin-top: 20px;
         }
 
+        .nav-bar {
+            background: white;
+            padding: 15px 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 10px;
+        }
+
         .nav-button {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 15px 25px;
+            padding: 10px 20px;
             background-color: #4CAF50;
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 5px;
             cursor: pointer;
             font-size: 16px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            transition: background-color 0.3s;
+            transition: background-color 0.2s;
         }
 
         .nav-button:hover {
@@ -144,6 +164,15 @@
     </style>
 </head>
 <body>
+    <div class="nav-bar">
+        <div class="nav-controls">
+            <h2>Learning Mode</h2>
+        </div>
+        <div class="nav-links">
+            <button onclick="window.location.href='/flash-quiz'" class="nav-button">Flash Quiz Mode</button>
+            <button onclick="window.location.href='/sp500-explorer'" class="nav-button">S&P 500 Explorer</button>
+        </div>
+    </div>
     <div class="game-container">
         <h1>Stock Market Learning Game</h1>
         <div class="score">Score: <span id="score">0</span></div>
@@ -182,10 +211,6 @@
             <div id="categoryList" class="category-list"></div>
         </div>
     </div>
-
-    <button onclick="window.location.href='/flash-quiz'" class="nav-button">
-        Switch to Flash Quiz Mode
-    </button>
 
     <script>
         let stockData = [];

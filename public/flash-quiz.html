@@ -80,11 +80,35 @@
             background-color: #007bff;
             color: white;
             cursor: pointer;
-            transition: background-color 0.3s;
+            transition: all 0.3s ease;
         }
 
         .option-button:hover {
             background-color: #0056b3;
+            transform: scale(1.02);
+        }
+
+        .correct-answer {
+            background-color: #28a745 !important;
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+        }
+
+        .wrong-answer {
+            background-color: #dc3545 !important;
+            transform: scale(0.95);
+            opacity: 0.7;
+        }
+
+        @keyframes correctStreak {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .streak-update {
+            animation: correctStreak 0.5s ease;
+            color: #28a745;
         }
 
         .timer {
@@ -107,25 +131,6 @@
             padding: 10px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .nav-button {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 15px 25px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            transition: background-color 0.3s;
-        }
-
-        .nav-button:hover {
-            background-color: #45a049;
         }
 
         .settings-button {
@@ -211,9 +216,59 @@
             background-color: #dc3545;
             color: white;
         }
+
+        .nav-bar {
+            background: white;
+            padding: 15px 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+
+        .nav-button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
+    <div class="nav-bar">
+        <div class="nav-controls">
+            <h2>Flash Quiz Mode</h2>
+        </div>
+        <div class="nav-links">
+            <button onclick="window.location.href='/'" class="nav-button">Learning Mode</button>
+            <button onclick="window.location.href='/sp500-explorer'" class="nav-button">S&P 500 Explorer</button>
+        </div>
+    </div>
     <div class="streak">Streak: <span id="streakCount">0</span></div>
     <div class="timer">Time: <span id="timeLeft">5</span>s</div>
     
@@ -230,10 +285,6 @@
             <div class="options-grid" id="options"></div>
         </div>
     </div>
-
-    <button onclick="window.location.href='/'" class="nav-button">
-        Switch to Learning Mode
-    </button>
 
     <button onclick="openSettings()" class="settings-button">⚙️ Settings</button>
 
@@ -354,13 +405,13 @@
         }
 
         async function showFlashCard(questionItem) {
-            if (state.isProcessing) return;
-            state.isProcessing = true;
-            state.isShowingData = true;
+            // Clear any existing timers
+            if (timer) clearInterval(timer);
             
             const flashCard = document.getElementById('flashCard');
             const quizContainer = document.getElementById('quizContainer');
             
+            // Hide quiz, show flash card
             flashCard.style.display = 'flex';
             quizContainer.style.display = 'none';
 
@@ -370,25 +421,15 @@
             flashCard.querySelector('.info').textContent = 
                 `${questionItem.stock.sector} | ${questionItem.stock.industry}`;
             
-            // Show description
             const description = questionItem.stock.description || '';
             const snippet = getDescriptionSnippet(description);
             flashCard.querySelector('.description').textContent = snippet;
 
-            // Enforce minimum display time
+            // Wait for flash duration
             await new Promise(resolve => setTimeout(resolve, settings.flashDuration));
             
-            state.dataCardsShown++;
-            state.isShowingData = false;
-            state.isProcessing = false;
-
-            // Force a question if we've shown too many data cards
-            if (state.dataCardsShown >= settings.questionInterval) {
-                showQuiz(questionItem);
-                state.dataCardsShown = 0;
-            } else {
-                showQuiz(questionItem);
-            }
+            // Show quiz after flash duration
+            showQuiz(questionItem);
         }
 
         function getDescriptionSnippet(description) {
@@ -401,12 +442,10 @@
         }
 
         async function showQuiz(questionItem) {
-            if (state.isProcessing) return;
-            state.isProcessing = true;
-            
             const flashCard = document.getElementById('flashCard');
             const quizContainer = document.getElementById('quizContainer');
             
+            // Hide flash card, show quiz
             flashCard.style.display = 'none';
             quizContainer.style.display = 'block';
             
@@ -416,8 +455,8 @@
             const options = generateOptions(questionItem, correctAnswer);
             displayOptions(options, correctAnswer, questionItem.id);
 
+            // Start fresh timer
             startTimer();
-            state.isProcessing = false;
         }
 
         function generateQuestion(questionItem) {
@@ -445,18 +484,19 @@
         }
 
         function startTimer() {
+            if (timer) clearInterval(timer);
+            
             timeLeft = Math.floor(settings.answerDuration / 1000);
             updateTimer();
-            if (timer) clearInterval(timer);
+            
             timer = setInterval(() => {
                 timeLeft--;
                 updateTimer();
                 if (timeLeft <= 0) {
+                    clearInterval(timer);
                     streak = 0;
                     updateStreak();
-                    setTimeout(() => {
-                        nextQuestion();
-                    }, 1000);
+                    nextQuestion();
                 }
             }, 1000);
         }
@@ -473,8 +513,25 @@
             if (timer) clearInterval(timer);
             
             const isCorrect = selected === correct;
+            const buttons = document.querySelectorAll('.option-button');
+            
+            buttons.forEach(button => {
+                if (button.textContent === selected) {
+                    button.classList.add(isCorrect ? 'correct-answer' : 'wrong-answer');
+                } else if (button.textContent === correct && !isCorrect) {
+                    // Highlight the correct answer if user chose wrong
+                    setTimeout(() => {
+                        button.classList.add('correct-answer');
+                    }, 300);
+                }
+                button.disabled = true;
+            });
+
             if (isCorrect) {
                 streak++;
+                const streakElement = document.getElementById('streakCount');
+                streakElement.classList.add('streak-update');
+                setTimeout(() => streakElement.classList.remove('streak-update'), 500);
             } else {
                 streak = 0;
             }
@@ -485,7 +542,6 @@
             const nextInterval = REVIEW_INTERVALS[history.level];
             
             const currentQuestion = questionQueue.find(q => q.id === questionId);
-            
             if (currentQuestion) {
                 addToQueue({
                     type: currentQuestion.type,
@@ -494,10 +550,8 @@
                 });
             }
 
-            // Add delay before next question
-            setTimeout(() => {
-                nextQuestion();
-            }, 1000); // 1 second delay between questions
+            // Longer delay to show the animation
+            setTimeout(nextQuestion, 1500);
         }
 
         function nextQuestion() {
