@@ -1,12 +1,29 @@
+const https = require('https');
+const http = require('http');
 const express = require('express');
 const path = require('path');
 const fs = require('fs').promises;
 const yahooFinance = require('yahoo-finance2').default;
+const fsSync = require('fs');
 
 const app = express();
-const port = 3200;
+const port = process.argv[2] ? parseInt(process.argv[2], 10) : 3200;
+const httpsPort = 443;
+
 let isUpdatingMarketCaps = false;
 let lastUpdateTime = null;
+
+// SSL certificate and key from environment variables
+let sslOptions;
+try {
+    sslOptions = {
+        key: fsSync.readFileSync(process.env.SSL_KEY_PATH || ''),
+        cert: fsSync.readFileSync(process.env.SSL_CERT_PATH || '')
+    };
+} catch (err) {
+    console.error("Error loading SSL certificates. Falling back to HTTP only:", err.message);
+    sslOptions = null;
+}
 
 async function fetchMarketCap(symbol) {
     try {
@@ -218,10 +235,20 @@ app.get('/market-cap-status', async (req, res) => {
     res.json(status);
 });
 
-app.listen(port, async () => {
-    console.log(`Server running at http://localhost:${port}`);
+// Start the HTTP server
+http.createServer(app).listen(port, async () => {
+    console.log(`HTTP server running at http://localhost:${port}`);
     console.log('Checking market cap data on startup...');
     await checkLastUpdate();
     console.log('Starting update scheduler...');
     scheduleUpdates();
-}); 
+});
+
+// Start the HTTPS server if SSL options are available
+if (sslOptions && sslOptions.key && sslOptions.cert) {
+    https.createServer(sslOptions, app).listen(httpsPort, () => {
+        console.log(`HTTPS server running at https://localhost:${httpsPort}`);
+    });
+} else {
+    console.log("SSL certificates not configured. HTTPS server is disabled.");
+}
