@@ -1,0 +1,9 @@
+name: Update Website
+
+on: push
+
+jobs:
+  trigger-curl:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl http://stonkz.org:8080
