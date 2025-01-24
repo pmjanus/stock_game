@@ -10,6 +10,9 @@
 !server.js
 !package.json
 !.gitignore
+!.github
+!.github/workflows
+!.github/workflows/deploy.yml
 
 # Ignore node_modules even if inside allowed directories
 node_modules/
