@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S&P 500 Explorer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-top: 20px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .view-selector, .sort-selector, .search-box {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .search-box {
+            min-width: 200px;
+        }
+
+        .company-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .company-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+
+        .company-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .company-ticker {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .company-name {
+            font-size: 18px;
+            margin: 10px 0;
+        }
+
+        .company-info {
+            color: #666;
+            margin: 5px 0;
+        }
+
+        .market-cap {
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .sector-group {
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .sector-header {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sector-stats {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .nav-button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+
+        .nav-button:hover {
+            background-color: #45a049;
+        }
+
+        .description {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .company-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .yahoo-link {
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .yahoo-link:hover {
+            opacity: 1;
+        }
+
+        .nav-buttons {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .market-cap {
+            font-size: 18px;
+            font-weight: bold;
+            color: #28a745;
+            margin: 10px 0;
+        }
+
+        .data-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-size: 14px;
+            color: #666;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            position: fixed;
+            bottom: -60px; /* Initially hidden */
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 15px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            transition: bottom 0.3s ease;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            z-index: 1000;
+        }
+
+        .footer:hover,
+        .footer.visible {
+            bottom: 0;
+        }
+
+        .footer-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1001;
+        }
+
+        .nav-button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+
+        .nav-button:hover {
+            background-color: #45a049;
+        }
+
+        .nav-bar {
+            background: white;
+            padding: 15px 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+
+        .nav-button:hover {
+            background-color: #45a049;
+        }
+
+        /* Modal styles for stock detail view */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1001;
+        }
+
+        .modal-content {
+            position: relative;
+            background: white;
+            margin: 50px auto;
+            padding: 25px;
+            width: 80%;
+            max-width: 800px;
+            border-radius: 12px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .close-button {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .stock-detail-description {
+            margin-top: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="nav-controls">
+            <h2>S&P 500 Explorer</h2>
+            <select class="view-selector" id="viewSelector">
+                <option value="all">All Companies</option>
+                <option value="sector">By Sector</option>
+                <option value="industry">By Industry</option>
+            </select>
+
+            <select class="sort-selector" id="sortSelector">
+                <option value="marketCap">Market Cap (High to Low)</option>
+                <option value="marketCapAsc">Market Cap (Low to High)</option>
+                <option value="alphabetical">Alphabetical</option>
+                <option value="ticker">Ticker</option>
+            </select>
+
+            <input type="text" class="search-box" id="searchBox" placeholder="Search companies...">
+        </div>
+        
+        <div class="nav-links">
+            <button onclick="window.location.href='/'" class="nav-button">Learning Mode</button>
+            <button onclick="window.location.href='/flash-quiz'" class="nav-button">Flash Quiz Mode</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="companiesContainer"></div>
+    </div>
+
+    <div class="data-status" id="dataStatus">
+        <div class="loading"></div>
+        Loading market data...
+    </div>
+
+    <div id="stockModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">×</span>
+            <div id="stockDetail"></div>
+        </div>
+    </div>
+
+    <script>
+        let stockData = [];
+        let currentView = 'all';
+        let currentSort = 'marketCap';
+        let searchTerm = '';
+
+        async function loadStocks() {
+            const statusDiv = document.getElementById('dataStatus');
+            try {
+                // Check server status first
+                const statusResponse = await fetch('/market-cap-status');
+                const status = await statusResponse.json();
+                
+                if (status.isUpdating) {
+                    statusDiv.innerHTML = `
+                        <div class="loading"></div>
+                        Server is currently updating market cap data...
+                    `;
+                }
+                
+                // Continue with existing load
+                const response = await fetch('/stocks.json');
+                stockData = await response.json();
+                
+                const hasMarketCap = stockData.some(stock => stock.marketCap);
+                
+                if (hasMarketCap) {
+                    const timeString = new Date(status.lastUpdate).toLocaleString();
+                    statusDiv.innerHTML = `
+                        <span style="color: #28a745;">✓</span> 
+                        Market data loaded (Last updated: ${timeString})
+                    `;
+                } else {
+                    statusDiv.innerHTML = `
+                        <span style="color: #dc3545;">⚠</span> 
+                        Market cap data not available
+                    `;
+                }
+                
+                updateDisplay();
+            } catch (error) {
+                console.error('Error loading stocks:', error);
+                statusDiv.innerHTML = `
+                    <span style="color: #dc3545;">✗</span> 
+                    Error loading market data
+                `;
+            }
+        }
+
+        function formatMarketCap(marketCap) {
+            if (marketCap >= 1e12) {
+                return `$${(marketCap / 1e12).toFixed(2)}T`;
+            } else if (marketCap >= 1e9) {
+                return `$${(marketCap / 1e9).toFixed(2)}B`;
+            } else {
+                return `$${(marketCap / 1e6).toFixed(2)}M`;
+            }
+        }
+
+        function createCompanyCard(company) {
+            const marketCapFormatted = formatMarketCap(company.marketCap || 0);
+            const yahooLink = `https://finance.yahoo.com/quote/${company.symbol}`;
+            
+            return `
+                <div class="company-card" onclick="showStockDetail('${company.symbol}')">
+                    <div class="company-header">
+                        <div class="company-ticker">${company.symbol}</div>
+                        <a href="${yahooLink}" 
+                           target="_blank" 
+                           class="yahoo-link"
+                           onclick="event.stopPropagation()">
+                            📈
+                        </a>
+                    </div>
+                    <div class="company-name">${company.name}</div>
+                    <div class="company-info">Sector: ${company.sector}</div>
+                    <div class="company-info">Industry: ${company.industry}</div>
+                    <div class="company-info market-cap">Market Cap: ${marketCapFormatted}</div>
+                    <div class="description">${company.description || 'No description available.'}</div>
+                </div>
+            `;
+        }
+
+        function sortStocks(stocks, sortBy) {
+            return [...stocks].sort((a, b) => {
+                if (sortBy === 'marketCap') {
+                    // Parse market caps as numbers and handle undefined/null values
+                    const marketCapA = Number(a.marketCap) || 0;
+                    const marketCapB = Number(b.marketCap) || 0;
+                    return marketCapB - marketCapA;  // Sort in descending order
+                }
+                // Other sorting logic...
+                return a[sortBy].localeCompare(b[sortBy]);
+            });
+        }
+
+        function filterCompanies(companies) {
+            if (!searchTerm) return companies;
+            
+            const term = searchTerm.toLowerCase();
+            return companies.filter(company => 
+                company.name.toLowerCase().includes(term) ||
+                company.symbol.toLowerCase().includes(term) ||
+                company.sector.toLowerCase().includes(term) ||
+                company.industry.toLowerCase().includes(term)
+            );
+        }
+
+        function calculateSectorStats(companies) {
+            const totalMarketCap = companies.reduce((sum, company) => sum + company.marketCap, 0);
+            return {
+                count: companies.length,
+                totalMarketCap: formatMarketCap(totalMarketCap),
+                avgMarketCap: formatMarketCap(totalMarketCap / companies.length)
+            };
+        }
+
+        function updateDisplay() {
+            const container = document.getElementById('companiesContainer');
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            const sortBy = document.getElementById('sortSelector').value;
+            let html = '';
+            
+            let filteredCompanies = stockData.filter(company => 
+                company.symbol.toLowerCase().includes(searchTerm) ||
+                company.name.toLowerCase().includes(searchTerm) ||
+                company.sector.toLowerCase().includes(searchTerm) ||
+                company.industry.toLowerCase().includes(searchTerm)
+            );
+
+            // Sort companies based on selected sort option
+            if (sortBy === 'marketCap') {
+                filteredCompanies.sort((a, b) => (b.marketCap || 0) - (a.marketCap || 0));
+            } else if (sortBy === 'marketCapAsc') {
+                filteredCompanies.sort((a, b) => (a.marketCap || 0) - (b.marketCap || 0));
+            } else if (sortBy === 'alphabetical') {
+                filteredCompanies.sort((a, b) => a.name.localeCompare(b.name));
+            } else if (sortBy === 'ticker') {
+                filteredCompanies.sort((a, b) => a.symbol.localeCompare(b.symbol));
+            }
+
+            const currentView = document.getElementById('viewSelector').value;
+
+            if (currentView === 'sector') {
+                const sectors = {};
+                filteredCompanies.forEach(company => {
+                    if (!sectors[company.sector]) sectors[company.sector] = [];
+                    sectors[company.sector].push(company);
+                });
+
+                Object.entries(sectors).forEach(([sector, companies]) => {
+                    const stats = calculateSectorStats(companies);
+                    html += `
+                        <div class="sector-group">
+                            <div class="sector-header">
+                                <span>${sector}</span>
+                                <span class="sector-stats">
+                                    Companies: ${stats.count} | 
+                                    Total Market Cap: ${stats.totalMarketCap} | 
+                                    Avg Market Cap: ${stats.avgMarketCap}
+                                </span>
+                            </div>
+                            <div class="company-grid">
+                                ${companies.map(createCompanyCard).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+            } else if (currentView === 'industry') {
+                const industries = {};
+                filteredCompanies.forEach(company => {
+                    if (!industries[company.industry]) industries[company.industry] = [];
+                    industries[company.industry].push(company);
+                });
+
+                Object.entries(industries).forEach(([industry, companies]) => {
+                    const stats = calculateSectorStats(companies);
+                    html += `
+                        <div class="sector-group">
+                            <div class="sector-header">
+                                <span>${industry}</span>
+                                <span class="sector-stats">
+                                    Companies: ${stats.count} | 
+                                    Total Market Cap: ${stats.totalMarketCap} | 
+                                    Avg Market Cap: ${stats.avgMarketCap}
+                                </span>
+                            </div>
+                            <div class="company-grid">
+                                ${companies.map(createCompanyCard).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                html = `
+                    <div class="company-grid">
+                        ${filteredCompanies.map(createCompanyCard).join('')}
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function showStockDetail(symbol) {
+            const company = stockData.find(stock => stock.symbol === symbol);
+            if (!company) return;
+
+            const marketCapFormatted = formatMarketCap(company.marketCap || 0);
+            const yahooLink = `https://finance.yahoo.com/quote/${company.symbol}`;
+
+            document.getElementById('stockDetail').innerHTML = `
+                <h2>${company.symbol} - ${company.name}</h2>
+                <div class="company-info">Sector: ${company.sector}</div>
+                <div class="company-info">Industry: ${company.industry}</div>
+                <div class="company-info market-cap">Market Cap: ${marketCapFormatted}</div>
+                <a href="${yahooLink}" target="_blank" class="yahoo-link">View on Yahoo Finance 📈</a>
+                <div class="stock-detail-description">${company.description || 'No description available.'}</div>
+            `;
+
+            document.getElementById('stockModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('stockModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('stockModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('viewSelector').addEventListener('change', (e) => {
+            currentView = e.target.value;
+            updateDisplay();
+        });
+
+        document.getElementById('sortSelector').addEventListener('change', (e) => {
+            currentSort = e.target.value;
+            updateDisplay();
+        });
+
+        document.getElementById('searchBox').addEventListener('input', (e) => {
+            searchTerm = e.target.value;
+            updateDisplay();
+        });
+
+        loadStocks();
+    </script>
+</body>
+</html> 

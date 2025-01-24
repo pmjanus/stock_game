@@ -6,7 +6,7 @@
 !public/
 !public/index.html
 !public/flash-quiz.html
-
+!public/sp500-explorer.html
 !server.js
 !package.json
 !.gitignore
