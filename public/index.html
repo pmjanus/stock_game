@@ -124,40 +124,23 @@
         }
 
         .nav-bar {
-            background: white;
-            padding: 15px 20px;
+            background: #ffffff;
+            padding: 10px 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            justify-content: center;
             margin-bottom: 20px;
         }
-
-        .nav-controls {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 10px;
-        }
-
         .nav-button {
-            padding: 10px 20px;
+            padding: 8px 16px;
             background-color: #4CAF50;
-            color: white;
+            color: #fff;
             border: none;
-            border-radius: 5px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.2s;
+            font-size: 1rem;
+            margin: 0 5px;
         }
-
         .nav-button:hover {
             background-color: #45a049;
         }
@@ -165,12 +148,10 @@
 </head>
 <body>
     <div class="nav-bar">
-        <div class="nav-controls">
-            <h2>Learning Mode</h2>
-        </div>
         <div class="nav-links">
+            <button onclick="window.location.href='/'" class="nav-button">Learning Mode</button>
+            <button onclick="window.location.href='/sp500-ranking.html'" class="nav-button">Ranking</button>
             <button onclick="window.location.href='/flash-quiz'" class="nav-button">Flash Quiz Mode</button>
-            <button onclick="window.location.href='/sp500-explorer'" class="nav-button">S&P 500 Explorer</button>
         </div>
     </div>
     <div class="game-container">
