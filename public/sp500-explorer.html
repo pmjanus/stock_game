@@ -365,6 +365,19 @@
         bottom: var(--spacing-2);
       }
     }
+
+    .ranking-badge {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      line-height: 30px;
+      border-radius: 50%;
+      background-color: #4CAF50;
+      color: white;
+      text-align: center;
+      font-weight: bold;
+      margin-right: 8px;
+    }
   </style>
 </head>
 <body>
@@ -387,6 +400,7 @@
     </div>
     <div class="nav-links">
       <button onclick="window.location.href='/'" class="nav-button">Learning Mode</button>
+      <button onclick="window.location.href='/sp500-explorer'" class="nav-button" disabled>Explorer</button>
       <button onclick="window.location.href='/sp500-ranking.html'" class="nav-button">Ranking</button>
       <button onclick="window.location.href='/flash-quiz'" class="nav-button">Flash Quiz Mode</button>
     </div>
@@ -477,12 +491,22 @@
       }
     }
 
-    function createCompanyCard(company) {
+    function getCardBackgroundColor(rank) {
+      if (rank === 1) return "#FFD700"; // Gold
+      if (rank === 2) return "#C0C0C0"; // Silver
+      if (rank === 3) return "#CD7F32"; // Bronze
+      if (rank <= 10) return "#E5E4E2"; // Platinum-ish
+      if (rank <= 50) return "#F0FFF0"; // Honeydew
+      return "#FFFFFF"; // Default: White
+    }
+
+    function createCompanyCard(company, rank) {
       const marketCapFormatted = formatMarketCap(company.marketCap || 0);
       const yahooLink = `https://finance.yahoo.com/quote/${company.symbol}`;
       return `
         <div class="company-card" onclick="showStockDetail('${company.symbol}')">
           <div class="company-header">
+            <div class="ranking-badge" style="background-color: ${getCardBackgroundColor(rank)};">${rank}</div>
             <div class="company-ticker">${company.symbol}</div>
             <a href="${yahooLink}" 
                target="_blank" 
@@ -571,7 +595,9 @@
                 </span>
               </div>
               <div class="company-grid">
-                ${companies.map(createCompanyCard).join('')}
+                ${companies
+                    .map((company, index) => createCompanyCard(company, index + 1))
+                    .join('')}
               </div>
             </div>
           `;
@@ -596,7 +622,9 @@
                 </span>
               </div>
               <div class="company-grid">
-                ${companies.map(createCompanyCard).join('')}
+                ${companies
+                    .map((company, index) => createCompanyCard(company, index + 1))
+                    .join('')}
               </div>
             </div>
           `;
@@ -605,7 +633,9 @@
         // View all
         html = `
           <div class="company-grid">
-            ${filteredCompanies.map(createCompanyCard).join('')}
+            ${filteredCompanies
+                .map((company, index) => createCompanyCard(company, index + 1))
+                .join('')}
           </div>
         `;
       }
