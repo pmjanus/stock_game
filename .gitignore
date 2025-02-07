@@ -1,26 +1,38 @@
-# First ignore everything
+# First, ignore everything
 *
-*/*
 
-# Then allow specific directories and files
+# Then, add back the files and directories we want to track
+!.gitignore
+!README.md
+!package.json
+!package-lock.json
+!server.js
+
+# Track all files in the public directory
 !public/
+!public/*
+!public/styles.css
+!public/navbar.html
+!public/sidebar.html
 !public/index.html
-!public/flash-quiz.html
 !public/sp500-explorer.html
 !public/sp500-ranking.html
-!server.js
-!package.json
-!.gitignore
-!.github
-!.github/workflows
-!.github/workflows/deploy.yml
+!public/flash-quiz.html
+
+# Track specific JSON files
+!stocks.json
+!categories.json
+
+# Track specific directories
+!scripts/
+!scripts/*
+!.github/
+!.github/workflows/
+!.github/workflows/*
 
 # Ignore node_modules even if inside allowed directories
 node_modules/
 **/node_modules/
-
-# Ignore the generated stocks data file since it can be recreated
-stocks.json
 
 # Ignore environment files
 .env
