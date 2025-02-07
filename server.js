@@ -25,14 +25,39 @@ try {
     sslOptions = null;
 }
 
+// Add near the top of the file, after other const declarations
+const args = process.argv.slice(2);
+const forceRefresh = args.includes('--refresh');
+
 async function fetchMarketCap(symbol) {
     try {
         const queryOptions = { modules: ['price', 'summaryDetail'] };
         const result = await yahooFinance.quoteSummary(symbol, queryOptions);
-        return result.price.marketCap || result.summaryDetail.marketCap || null;
+        
+        // Log the price data to see what we're getting
+        console.log(`${symbol} price data:`, {
+            marketCap: result.price.marketCap,
+            regularMarketChange: result.price.regularMarketChange,
+            regularMarketChangePercent: result.price.regularMarketChangePercent,
+            regularMarketPrice: result.price.regularMarketPrice
+        });
+
+        // The regularMarketChangePercent from Yahoo is already in percentage form
+        // So if it returns 2.5, it means 2.5%, we don't need to multiply by 100
+        return {
+            marketCap: result.price.marketCap || result.summaryDetail.marketCap || null,
+            regularMarketChangePercent: result.price.regularMarketChangePercent || null,
+            regularMarketChange: result.price.regularMarketChange || null,
+            regularMarketPrice: result.price.regularMarketPrice || null
+        };
     } catch (err) {
         console.error(`Error fetching ${symbol}:`, err.message);
-        return null;
+        return {
+            marketCap: null,
+            regularMarketChangePercent: null,
+            regularMarketChange: null,
+            regularMarketPrice: null
+        };
     }
 }
 
@@ -59,12 +84,14 @@ async function updateMarketCaps() {
             const batch = stocksData.slice(i, i + 10);
             const updates = await Promise.all(
                 batch.map(async (stock) => {
-                    const marketCap = await fetchMarketCap(stock.symbol);
-                    if (marketCap) {
-                        stock.marketCap = marketCap;
+                    const data = await fetchMarketCap(stock.symbol);
+                    if (data.marketCap) {
+                        stock.marketCap = data.marketCap;
+                        stock.priceChange = data.regularMarketChange;
+                        stock.priceChangePercent = data.regularMarketChangePercent;
                         updatedCount++;
                         if (updatedCount % 10 === 0) {
-                            console.log(`Updated ${updatedCount}/${totalStocks}: ${stock.symbol} - Market Cap: ${marketCap}`);
+                            console.log(`Updated ${updatedCount}/${totalStocks}: ${stock.symbol} - Market Cap: ${data.marketCap}`);
                         }
                     }
                     return stock;
@@ -158,8 +185,9 @@ async function checkLastUpdate() {
             console.log('Current time:', now.toLocaleString());
             console.log('Has valid market cap data:', hasValidData);
             
-            if (!hasValidData || now - lastUpdate > 24 * 60 * 60 * 1000) {
-                console.log('Update needed - No valid data or data is over 24 hours old');
+            // Add forceRefresh to the conditions
+            if (forceRefresh || !hasValidData || now - lastUpdate > 24 * 60 * 60 * 1000) {
+                console.log(forceRefresh ? 'Force refresh requested' : 'Update needed - No valid data or data is over 24 hours old');
                 needsUpdate = true;
             } else {
                 console.log('Data is current and valid, no update needed');

@@ -184,6 +184,14 @@
       margin: var(--spacing-1) 0;
     }
 
+    .market-cap .positive {
+      color: #28a745;
+    }
+
+    .market-cap .negative {
+      color: #dc3545;
+    }
+
     .description {
       margin-top: var(--spacing-1);
       font-size: 0.9rem;
@@ -378,6 +386,20 @@
       font-weight: bold;
       margin-right: 8px;
     }
+
+    .price-change {
+      font-weight: bold;
+      font-size: 0.9rem;
+      margin: var(--spacing-1) 0;
+    }
+
+    .price-change.positive {
+      color: #28a745;
+    }
+
+    .price-change.negative {
+      color: #dc3545;
+    }
   </style>
 </head>
 <body>
@@ -393,6 +415,8 @@
       <select class="sort-selector" id="sortSelector">
         <option value="marketCap">Market Cap (High to Low)</option>
         <option value="marketCapAsc">Market Cap (Low to High)</option>
+        <option value="priceChange">Daily % Change (High to Low)</option>
+        <option value="priceChangeAsc">Daily % Change (Low to High)</option>
         <option value="alphabetical">Alphabetical</option>
         <option value="ticker">Ticker</option>
       </select>
@@ -500,9 +524,38 @@
       return "black"; // Default: Darker green for solid visibility
     }
 
+    function formatPriceChange(change, changePercent) {
+      if (!change || changePercent === undefined) return '';
+      
+      const sign = change >= 0 ? '+' : '';
+      const formattedChange = parseFloat(change).toFixed(2);
+      const formattedPercent = (parseFloat(changePercent) * 100).toFixed(2);
+      return `${sign}$${formattedChange} (${sign}${formattedPercent}%)`;
+    }
+
+    function calculateMarketCapChange(marketCap, priceChangePercent) {
+      if (!marketCap || priceChangePercent === undefined) return '';
+      
+      const change = marketCap * priceChangePercent;
+      if (Math.abs(change) >= 1e12) {
+        return `(${(change / 1e12).toFixed(2)}T)`;
+      } else if (Math.abs(change) >= 1e9) {
+        return `(${(change / 1e9).toFixed(2)}B)`;
+      } else if (Math.abs(change) >= 1e6) {
+        return `(${(change / 1e6).toFixed(2)}M)`;
+      }
+      return `(${change.toFixed(2)})`;
+    }
+
     function createCompanyCard(company, rank) {
       const marketCapFormatted = formatMarketCap(company.marketCap || 0);
+      const marketCapChangeFormatted = calculateMarketCapChange(company.marketCap, company.priceChangePercent);
       const yahooLink = `https://finance.yahoo.com/quote/${company.symbol}`;
+      
+      // Format price change
+      const priceChangeText = formatPriceChange(company.priceChange, company.priceChangePercent);
+      const priceChangeClass = (company.priceChangePercent || 0) >= 0 ? 'positive' : 'negative';
+
       return `
         <div class="company-card" onclick="showStockDetail('${company.symbol}')">
           <div class="company-header">
@@ -518,7 +571,11 @@
           <div class="company-name">${company.name}</div>
           <div class="company-info">Sector: ${company.sector}</div>
           <div class="company-info">Industry: ${company.industry}</div>
-          <div class="company-info market-cap">Market Cap: ${marketCapFormatted}</div>
+          <div class="company-info market-cap">
+            Market Cap: ${marketCapFormatted} 
+            ${marketCapChangeFormatted ? `<span class="${priceChangeClass}">${marketCapChangeFormatted}</span>` : ''}
+          </div>
+          ${priceChangeText ? `<div class="price-change ${priceChangeClass}">Daily Change: ${priceChangeText}</div>` : ''}
           <div class="description">${company.description || 'No description available.'}</div>
         </div>
       `;
@@ -530,6 +587,10 @@
           return (b.marketCap || 0) - (a.marketCap || 0);
         } else if (sortBy === 'marketCapAsc') {
           return (a.marketCap || 0) - (b.marketCap || 0);
+        } else if (sortBy === 'priceChange') {
+          return (b.priceChangePercent || 0) - (a.priceChangePercent || 0);
+        } else if (sortBy === 'priceChangeAsc') {
+          return (a.priceChangePercent || 0) - (b.priceChangePercent || 0);
         } else if (sortBy === 'alphabetical') {
           return a.name.localeCompare(b.name);
         } else if (sortBy === 'ticker') {
@@ -648,13 +709,20 @@
       if (!company) return;
 
       const marketCapFormatted = formatMarketCap(company.marketCap || 0);
+      const marketCapChangeFormatted = calculateMarketCapChange(company.marketCap, company.priceChangePercent);
       const yahooLink = `https://finance.yahoo.com/quote/${company.symbol}`;
+      const priceChangeText = formatPriceChange(company.priceChange, company.priceChangePercent);
+      const priceChangeClass = (company.priceChangePercent || 0) >= 0 ? 'positive' : 'negative';
 
       document.getElementById('stockDetail').innerHTML = `
         <h2>${company.symbol} - ${company.name}</h2>
         <div class="company-info">Sector: ${company.sector}</div>
         <div class="company-info">Industry: ${company.industry}</div>
-        <div class="company-info market-cap">Market Cap: ${marketCapFormatted}</div>
+        <div class="company-info market-cap">
+          Market Cap: ${marketCapFormatted}
+          ${marketCapChangeFormatted ? `<span class="${priceChangeClass}">${marketCapChangeFormatted}</span>` : ''}
+        </div>
+        ${priceChangeText ? `<div class="price-change ${priceChangeClass}">Daily Change: ${priceChangeText}</div>` : ''}
         <a href="${yahooLink}" target="_blank" class="yahoo-link">View on Yahoo Finance 📈</a>
         <div class="stock-detail-description">${company.description || 'No description available.'}</div>
       `;
