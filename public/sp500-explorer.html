@@ -3,434 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
   <title>S&P 500 Explorer</title>
-  <style>
-    :root {
-      --primary-color: #4CAF50;
-      --primary-hover: #45a049;
-      --accent-color: #007bff;
-      --background-color: #f0f2f5;
-      --text-color: #2c3e50;
-      --subtext-color: #666;
-      --card-bg: #ffffff;
-      --shadow-color: rgba(0,0,0,0.1);
-      --max-width: 1200px;
-      --border-radius: 8px;
-
-      /* Spacing scale: 4px = 0.25rem, 8px = 0.5rem, etc. */
-      --spacing-1: 0.5rem;
-      --spacing-2: 1rem;
-      --spacing-3: 1.5rem;
-      --spacing-4: 2rem;
-    }
-
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: var(--background-color);
-      color: var(--text-color);
-    }
-
-    .container {
-      max-width: var(--max-width);
-      margin: 0 auto;
-      padding: var(--spacing-2);
-      padding-top: var(--spacing-3);
-    }
-
-    /* Nav Bar */
-    .nav-bar {
-      background: var(--card-bg);
-      padding: var(--spacing-2) var(--spacing-2);
-      box-shadow: 0 2px 4px var(--shadow-color);
-      position: sticky;
-      top: 0;
-      z-index: 1000;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: var(--spacing-2);
-    }
-
-    .nav-controls {
-      display: flex;
-      gap: var(--spacing-2);
-      align-items: center;
-    }
-
-    .nav-controls h2 {
-      margin: 0;
-      font-size: 1.5rem;
-      color: var(--text-color);
-    }
-
-    .nav-links {
-      display: flex;
-      gap: var(--spacing-1);
-    }
-
-    .nav-button {
-      padding: var(--spacing-1) var(--spacing-2);
-      background-color: var(--primary-color);
-      color: #fff;
-      border: none;
-      border-radius: var(--border-radius);
-      cursor: pointer;
-      font-size: 1rem;
-      transition: background-color 0.2s ease;
-    }
-
-    .nav-button:hover,
-    .nav-button:focus {
-      background-color: var(--primary-hover);
-      outline: none;
-    }
-
-    /* Controls above company list */
-    .controls {
-      display: flex;
-      gap: var(--spacing-2);
-      margin-bottom: var(--spacing-2);
-      flex-wrap: wrap;
-    }
-
-    .view-selector,
-    .sort-selector,
-    .search-box {
-      padding: var(--spacing-1);
-      border: 1px solid #ddd;
-      border-radius: var(--border-radius);
-      font-size: 1rem;
-      background: #fff;
-      transition: box-shadow 0.2s ease;
-    }
-
-    .view-selector:focus,
-    .sort-selector:focus,
-    .search-box:focus {
-      box-shadow: 0 0 3px var(--primary-color);
-      outline: none;
-    }
-
-    .search-box {
-      min-width: 200px;
-    }
-
-    /* Grid of Companies */
-    .company-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: var(--spacing-2);
-    }
-
-    .company-card {
-      background: var(--card-bg);
-      border-radius: var(--border-radius);
-      padding: var(--spacing-2);
-      box-shadow: 0 2px 4px var(--shadow-color);
-      transition: transform 0.2s, box-shadow 0.2s;
-      cursor: pointer;
-    }
-
-    .company-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
-
-    .company-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: var(--spacing-1);
-    }
-
-    .company-ticker {
-      font-size: 1.25rem;
-      font-weight: bold;
-      color: var(--accent-color);
-      margin-right: var(--spacing-1);
-    }
-
-    .yahoo-link {
-      opacity: 0.7;
-      transition: opacity 0.2s ease;
-      font-size: 1.25rem;
-      text-decoration: none;
-      color: var(--accent-color);
-    }
-
-    .yahoo-link:hover {
-      opacity: 1;
-    }
-
-    .company-name {
-      font-size: 1.125rem;
-      margin: var(--spacing-1) 0;
-      font-weight: bold;
-      color: var(--text-color);
-    }
-
-    .company-info {
-      color: var(--subtext-color);
-      margin: var(--spacing-1) 0;
-      font-size: 0.95rem;
-    }
-
-    .market-cap {
-      font-weight: bold;
-      color: var(--primary-color);
-      font-size: 1rem;
-      margin: var(--spacing-1) 0;
-    }
-
-    .market-cap .positive {
-      color: #28a745;
-    }
-
-    .market-cap .negative {
-      color: #dc3545;
-    }
-
-    .description {
-      margin-top: var(--spacing-1);
-      font-size: 0.9rem;
-      color: var(--subtext-color);
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    /* Sector / Industry Group */
-    .sector-group {
-      margin-bottom: var(--spacing-3);
-      background: var(--card-bg);
-      border-radius: var(--border-radius);
-      padding: var(--spacing-2);
-      box-shadow: 0 2px 4px var(--shadow-color);
-    }
-
-    .sector-header {
-      font-size: 1.25rem;
-      margin-bottom: var(--spacing-2);
-      color: var(--text-color);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .sector-stats {
-      font-size: 0.9rem;
-      color: var(--subtext-color);
-    }
-
-    /* Status Box */
-    .data-status {
-      position: fixed;
-      top: var(--spacing-2);
-      right: var(--spacing-2);
-      background: var(--card-bg);
-      padding: var(--spacing-1) var(--spacing-2);
-      border-radius: var(--border-radius);
-      box-shadow: 0 2px 4px var(--shadow-color);
-      font-size: 0.9rem;
-      color: var(--subtext-color);
-      display: flex;
-      align-items: center;
-      gap: var(--spacing-1);
-      z-index: 999;
-    }
-
-    .loading {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid var(--accent-color);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      0%   { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    /* Footer */
-    .footer {
-      position: fixed;
-      bottom: -60px; /* Initially hidden */
-      left: 0;
-      right: 0;
-      background: var(--card-bg);
-      padding: var(--spacing-2);
-      box-shadow: 0 -2px 10px var(--shadow-color);
-      transition: bottom 0.3s ease;
-      display: flex;
-      justify-content: center;
-      gap: var(--spacing-2);
-      z-index: 1000;
-    }
-
-    .footer:hover,
-    .footer.visible {
-      bottom: 0;
-    }
-
-    .footer-toggle {
-      position: fixed;
-      bottom: var(--spacing-2);
-      right: var(--spacing-2);
-      background: var(--primary-color);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.25rem;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-      z-index: 1001;
-    }
-
-    .footer-toggle:hover,
-    .footer-toggle:focus {
-      background: var(--primary-hover);
-    }
-
-    /* Modal */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.7);
-      z-index: 1001;
-    }
-
-    .modal-content {
-      position: relative;
-      background: var(--card-bg);
-      margin: 5% auto;
-      padding: var(--spacing-3);
-      width: 80%;
-      max-width: 800px;
-      border-radius: var(--border-radius);
-      max-height: 80vh;
-      overflow-y: auto;
-    }
-
-    .close-button {
-      position: absolute;
-      right: var(--spacing-2);
-      top: var(--spacing-2);
-      font-size: 1.5rem;
-      cursor: pointer;
-      color: var(--subtext-color);
-      border: none;
-      background: transparent;
-    }
-
-    .close-button:hover,
-    .close-button:focus {
-      color: var(--primary-color);
-      outline: none;
-    }
-
-    .stock-detail-description {
-      margin-top: var(--spacing-2);
-      line-height: 1.6;
-      color: var(--text-color);
-    }
-
-    /* Responsive: For devices < 600px wide */
-    @media (max-width: 600px) {
-      .company-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .nav-controls {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .nav-controls h2 {
-        margin-bottom: var(--spacing-1);
-      }
-
-      .nav-links {
-        margin-top: var(--spacing-1);
-      }
-
-      .data-status {
-        top: auto;
-        bottom: var(--spacing-2);
-      }
-    }
-
-    .ranking-badge {
-      display: inline-block;
-      width: 40px;
-      height: 40px;
-      line-height: 40px;
-      border-radius: 50%;
-      background-color: #4CAF50;
-      color: white;
-      text-align: center;
-      font-weight: bold;
-      margin-right: 8px;
-    }
-
-    .price-change {
-      font-weight: bold;
-      font-size: 0.9rem;
-      margin: var(--spacing-1) 0;
-    }
-
-    .price-change.positive {
-      color: #28a745;
-    }
-
-    .price-change.negative {
-      color: #dc3545;
-    }
-  </style>
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <!-- Navigation Bar -->
-  <div class="nav-bar">
-    <div class="nav-controls">
-      <h2>S&P 500 Explorer</h2>
-      <select class="view-selector" id="viewSelector">
-        <option value="all">All Companies</option>
-        <option value="sector">By Sector</option>
-        <option value="industry">By Industry</option>
-      </select>
-      <select class="sort-selector" id="sortSelector">
-        <option value="marketCap">Market Cap (High to Low)</option>
-        <option value="marketCapAsc">Market Cap (Low to High)</option>
-        <option value="priceChange">Daily % Change (High to Low)</option>
-        <option value="priceChangeAsc">Daily % Change (Low to High)</option>
-        <option value="alphabetical">Alphabetical</option>
-        <option value="ticker">Ticker</option>
-      </select>
-      <input type="text" class="search-box" id="searchBox" placeholder="Search companies...">
-    </div>
-    <div class="nav-links">
-      <button onclick="window.location.href='/'" class="nav-button">Learning Mode</button>
-      <button onclick="window.location.href='/sp500-explorer'" class="nav-button" disabled>Explorer</button>
-      <button onclick="window.location.href='/sp500-ranking.html'" class="nav-button">Ranking</button>
-      <button onclick="window.location.href='/flash-quiz'" class="nav-button">Flash Quiz Mode</button>
-    </div>
-  </div>
+  <!-- Navigation Bar will be loaded dynamically -->
+  <div id="navbar-container"></div>
 
-  <!-- Main Container -->
+  <!-- Sidebar will be loaded dynamically from the shared sidebar file -->
+  <div id="sidebar-container"></div>
+
+  <!-- Main Container: This must wrap your companies container -->
   <div class="container">
     <div id="companiesContainer"></div>
   </div>
@@ -462,6 +46,103 @@
     let currentSort = 'marketCap';
     let searchTerm = '';
 
+    // Market stats calculation
+    function calculateMarketStats(stocks) {
+      const duplicates = {
+        'GOOGL': 'GOOG',
+        'BRK.B': 'BRK.A',
+        'FOX': 'FOXA'
+      };
+
+      let totalMarketCap = 0;
+      let totalDailyChange = 0;
+      const processedTickers = new Set();
+
+      stocks.forEach(stock => {
+        if (duplicates[stock.symbol] && processedTickers.has(duplicates[stock.symbol])) {
+          return;
+        }
+        if (Object.values(duplicates).includes(stock.symbol) && 
+          processedTickers.has(Object.keys(duplicates).find(key => duplicates[key] === stock.symbol))) {
+          return;
+        }
+
+        if (stock.marketCap) {
+          totalMarketCap += stock.marketCap;
+          totalDailyChange += (stock.marketCap * (stock.priceChangePercent || 0));
+          processedTickers.add(stock.symbol);
+        }
+      });
+
+      const averageMarketCap = totalMarketCap / processedTickers.size;
+      const dailyChangePercent = (totalDailyChange / totalMarketCap) * 100;
+
+      return {
+        totalMarketCap,
+        averageMarketCap,
+        dailyChangePercent,
+        dailyChangeMarketCap: totalDailyChange
+      };
+    }
+
+    // Initialize the page
+    async function initializePage() {
+      try {
+        // First load the navbar
+        const navResponse = await fetch('/navbar.html');
+        const navHtml = await navResponse.text();
+        document.getElementById('navbar-container').innerHTML = navHtml;
+        
+        // Set up explorer-specific controls
+        document.getElementById('explorerBtn').disabled = true;
+        const pageControls = document.getElementById('pageControls');
+        pageControls.innerHTML = `
+          <select class="view-selector" id="viewSelector">
+            <option value="all">All Companies</option>
+            <option value="sector">By Sector</option>
+            <option value="industry">By Industry</option>
+          </select>
+          <select class="sort-selector" id="sortSelector">
+            <option value="marketCap">Market Cap (High to Low)</option>
+            <option value="marketCapAsc">Market Cap (Low to High)</option>
+            <option value="priceChange">Daily % Change (High to Low)</option>
+            <option value="priceChangeAsc">Daily % Change (Low to High)</option>
+            <option value="alphabetical">Alphabetical</option>
+            <option value="ticker">Ticker</option>
+          </select>
+          <input type="text" class="search-box" id="searchBox" placeholder="Search companies...">
+        `;
+        
+        // Attach event listeners
+        document.getElementById('viewSelector').addEventListener('change', (e) => {
+          currentView = e.target.value;
+          updateDisplay();
+        });
+        
+        document.getElementById('sortSelector').addEventListener('change', (e) => {
+          currentSort = e.target.value;
+          updateDisplay();
+        });
+        
+        document.getElementById('searchBox').addEventListener('input', (e) => {
+          searchTerm = e.target.value;
+          updateDisplay();
+        });
+        
+        // Load the sidebar
+        const sideResponse = await fetch('/sidebar.html');
+        const sideHtml = await sideResponse.text();
+        document.getElementById('sidebar-container').innerHTML = sideHtml;
+        
+        // Finally load the stocks data
+        await loadStocks();
+        // Initial display update
+        updateDisplay();
+      } catch (err) {
+        console.error('Error initializing page:', err);
+      }
+    }
+
     async function loadStocks() {
       const statusDiv = document.getElementById('dataStatus');
       try {
@@ -480,6 +161,23 @@
         const response = await fetch('/stocks.json');
         stockData = await response.json();
 
+        // Calculate market stats
+        const stats = calculateMarketStats(stockData);
+        
+        // Update sidebar
+        document.getElementById('totalMarketCap').textContent = formatMarketCap(stats.totalMarketCap);
+        document.getElementById('averageMarketCap').textContent = formatMarketCap(stats.averageMarketCap);
+        
+        const changeSign = stats.dailyChangePercent >= 0 ? '+' : '';
+        const changeClass = stats.dailyChangePercent >= 0 ? 'positive' : 'negative';
+        document.getElementById('totalDailyChange').innerHTML =
+            `<span class="${changeClass}">${changeSign}${stats.dailyChangePercent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</span>`;
+
+        // NEW: Update daily market cap change in absolute terms
+        const mkChange = stats.dailyChangeMarketCap;
+        const mkChangeSign = mkChange >= 0 ? '+' : '';
+        document.getElementById('dailyChangeMkcap').innerHTML = `<span class="${changeClass}">${mkChangeSign}${formatMarketCap(mkChange)}</span>`;
+
         const hasMarketCap = stockData.some(stock => stock.marketCap);
 
         if (hasMarketCap) {
@@ -488,6 +186,7 @@
             <span style="color: var(--primary-color);">✓</span>
             Market data loaded (Last updated: ${timeString})
           `;
+          document.getElementById('lastUpdated').textContent = timeString;
         } else {
           statusDiv.innerHTML = `
             <span style="color: #dc3545;">⚠</span>
@@ -506,12 +205,14 @@
     }
 
     function formatMarketCap(marketCap) {
-      if (marketCap >= 1e12) {
-        return `$${(marketCap / 1e12).toFixed(2)}T`;
-      } else if (marketCap >= 1e9) {
-        return `$${(marketCap / 1e9).toFixed(2)}B`;
+      if (Math.abs(marketCap) >= 1e12) {
+        return `$${(marketCap / 1e12).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}T`;
+      } else if (Math.abs(marketCap) >= 1e9) {
+        return `$${(marketCap / 1e9).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}B`;
+      } else if (Math.abs(marketCap) >= 1e6) {
+        return `$${(marketCap / 1e6).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}M`;
       } else {
-        return `$${(marketCap / 1e6).toFixed(2)}M`;
+        return `$${marketCap.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       }
     }
 
@@ -576,7 +277,8 @@
             ${marketCapChangeFormatted ? `<span class="${priceChangeClass}">${marketCapChangeFormatted}</span>` : ''}
           </div>
           ${priceChangeText ? `<div class="price-change ${priceChangeClass}">Daily Change: ${priceChangeText}</div>` : ''}
-          <div class="description">${company.description || 'No description available.'}</div>
+          <a href="${yahooLink}" target="_blank" class="yahoo-link">View on Yahoo Finance 📈</a>
+          <div class="stock-detail-description">${company.description || 'No description available.'}</div>
         </div>
       `;
     }
@@ -655,10 +357,12 @@
                   Avg Market Cap: ${stats.avgMarketCap}
                 </span>
               </div>
-              <div class="company-grid">
-                ${companies
-                    .map((company, index) => createCompanyCard(company, index + 1))
-                    .join('')}
+              <div class="companies-wrapper">
+                <div class="company-grid">
+                  ${companies
+                      .map((company, index) => createCompanyCard(company, index + 1))
+                      .join('')}
+                </div>
               </div>
             </div>
           `;
@@ -693,10 +397,12 @@
       } else {
         // View all
         html = `
-          <div class="company-grid">
-            ${filteredCompanies
-                .map((company, index) => createCompanyCard(company, index + 1))
-                .join('')}
+          <div class="companies-wrapper">
+            <div class="company-grid">
+              ${filteredCompanies
+                  .map((company, index) => createCompanyCard(company, index + 1))
+                  .join('')}
+            </div>
           </div>
         `;
       }
@@ -747,20 +453,8 @@
       footer.classList.toggle('visible');
     }
 
-    // Event Listeners
-    document.getElementById('viewSelector').addEventListener('change', () => {
-      updateDisplay();
-    });
-
-    document.getElementById('sortSelector').addEventListener('change', () => {
-      updateDisplay();
-    });
-
-    document.getElementById('searchBox').addEventListener('input', () => {
-      updateDisplay();
-    });
-
-    loadStocks();
+    // Initialize the page
+    initializePage();
   </script>
 </body>
 </html>

@@ -29,6 +29,9 @@ try {
 const args = process.argv.slice(2);
 const forceRefresh = args.includes('--refresh');
 
+// Add this constant near the top of the file
+const UPDATE_INTERVAL = 20 * 60 * 1000; // 20 minutes in milliseconds
+
 async function fetchMarketCap(symbol) {
     try {
         const queryOptions = { modules: ['price', 'summaryDetail'] };
@@ -138,32 +141,59 @@ function isMarketCloseTime() {
     return est.getHours() === 16 && est.getMinutes() === 0;
 }
 
-// Schedule daily updates
-function scheduleUpdates() {
-    // Log the next update time
+// Move isMarketOpen outside of scheduleUpdates
+function isMarketOpen() {
     const now = new Date();
     const est = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-    const nextUpdate = new Date(est);
-    nextUpdate.setHours(16, 0, 0, 0);
-    if (est.getHours() >= 16) {
-        nextUpdate.setDate(nextUpdate.getDate() + 1);
-    }
+    const day = est.getDay();
+    const hour = est.getHours();
+    const minute = est.getMinutes();
     
-    console.log('Next scheduled update:', nextUpdate.toLocaleString('en-US', { timeZone: 'America/New_York' }), 'EST');
+    // Market is closed on weekends (0 = Sunday, 6 = Saturday)
+    if (day === 0 || day === 6) return false;
+    
+    // Market is open from 9:30 AM to 4:00 PM EST
+    if (hour < 9 || hour > 16) return false;
+    if (hour === 9 && minute < 30) return false;
+    if (hour === 16 && minute > 0) return false;
+    
+    return true;
+}
 
-    // Check every minute
+// Schedule daily updates
+function scheduleUpdates() {
+    // Initial log
+    console.log('Starting price update scheduler...');
+
+    // Schedule regular updates
     setInterval(async () => {
-        if (isMarketCloseTime()) {
-            console.log('Market closed, starting market cap update...');
+        if (isMarketOpen()) {
+            console.log('Market is open, updating price data...');
             await updateMarketCaps();
             
-            // Log next update time after completion
+            // Log next update time
+            const nextUpdate = new Date(Date.now() + UPDATE_INTERVAL);
+            console.log('Next price update scheduled for:', 
+                nextUpdate.toLocaleString('en-US', { timeZone: 'America/New_York' }), 'EST');
+        } else {
+            console.log('Market is closed, skipping price update');
+        }
+    }, UPDATE_INTERVAL);
+
+    // Also keep the market close update for end-of-day data
+    setInterval(async () => {
+        if (isMarketCloseTime()) {
+            console.log('Market closed, running end-of-day update...');
+            await updateMarketCaps();
+            
+            // Log next end-of-day update
             const next = new Date();
             next.setDate(next.getDate() + 1);
             next.setHours(16, 0, 0, 0);
-            console.log('Next scheduled update:', next.toLocaleString('en-US', { timeZone: 'America/New_York' }), 'EST');
+            console.log('Next end-of-day update:', 
+                next.toLocaleString('en-US', { timeZone: 'America/New_York' }), 'EST');
         }
-    }, 60000);
+    }, 60000); // Check every minute for market close
 }
 
 async function checkLastUpdate() {
@@ -180,14 +210,16 @@ async function checkLastUpdate() {
             const lastUpdate = new Date(stats.mtime);
             const now = new Date();
             const hasValidData = stocksData.some(stock => stock.marketCap > 0);
+            const timeSinceLastUpdate = now - lastUpdate;
             
             console.log('Last update:', lastUpdate.toLocaleString());
             console.log('Current time:', now.toLocaleString());
             console.log('Has valid market cap data:', hasValidData);
             
-            // Add forceRefresh to the conditions
-            if (forceRefresh || !hasValidData || now - lastUpdate > 24 * 60 * 60 * 1000) {
-                console.log(forceRefresh ? 'Force refresh requested' : 'Update needed - No valid data or data is over 24 hours old');
+            // Update if forced, no valid data, or more than 20 minutes since last update
+            if (forceRefresh || !hasValidData || timeSinceLastUpdate > UPDATE_INTERVAL) {
+                console.log(forceRefresh ? 'Force refresh requested' : 
+                    'Update needed - No valid data or data is over 20 minutes old');
                 needsUpdate = true;
             } else {
                 console.log('Data is current and valid, no update needed');
@@ -197,7 +229,7 @@ async function checkLastUpdate() {
             needsUpdate = true;
         }
 
-        if (needsUpdate) {
+        if (needsUpdate && isMarketOpen()) {
             console.log('Starting market cap update...');
             await updateMarketCaps();
         }
@@ -209,12 +241,28 @@ async function checkLastUpdate() {
 // Start the update scheduler
 scheduleUpdates();
 
+// Serve favicon
+app.get('/favicon.ico', (req, res) => {
+    res.status(204).end(); // No content response for favicon
+});
+
 // Serve static files from the public directory
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Serve stocks.json
 app.get('/stocks.json', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store'); // Prevent caching
+    res.setHeader('Content-Type', 'application/json');
     res.sendFile(path.join(__dirname, 'stocks.json'));
+});
+
+// Add error handling for stocks.json
+app.use((err, req, res, next) => {
+    if (err.code === 'ENOENT' && err.path.includes('stocks.json')) {
+        console.error('stocks.json not found');
+        return res.status(404).json({ error: 'Stock data not available' });
+    }
+    next(err);
 });
 
 // Serve index.html
@@ -261,6 +309,17 @@ async function getMarketCapStatus() {
 app.get('/market-cap-status', async (req, res) => {
     const status = await getMarketCapStatus();
     res.json(status);
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('Server error:', err);
+    res.status(500).send('Internal Server Error');
+});
+
+// Handle 404s
+app.use((req, res) => {
+    res.status(404).send('Not Found');
 });
 
 // Start the HTTP server

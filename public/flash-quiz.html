@@ -3,294 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <title>Stock Flash Quiz</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: #f0f2f5;
-            min-height: 100vh;
-        }
-
-        .nav-bar {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .nav-button {
-            padding: 8px 16px;
-            background-color: #4CAF50;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .nav-button:hover {
-            background-color: #45a049;
-        }
-
-        .flash-container {
-            width: 90%;
-            max-width: 800px;
-            text-align: center;
-        }
-
-        .flash-card {
-            background-color: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-            min-height: 300px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .ticker {
-            font-size: 96px;
-            font-weight: bold;
-            margin-bottom: 30px;
-        }
-
-        .company-name {
-            font-size: 48px;
-            margin-bottom: 25px;
-        }
-
-        .info {
-            font-size: 28px;
-            color: #666;
-            margin-bottom: 20px;
-        }
-
-        .description {
-            font-size: 24px;
-            color: #444;
-            font-style: italic;
-            max-width: 800px;
-            margin: 20px auto;
-            line-height: 1.4;
-        }
-
-        .quiz-container {
-            display: none;
-            width: 100%;
-        }
-
-        .options-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .option-button {
-            padding: 20px;
-            font-size: 20px;
-            border: none;
-            border-radius: 8px;
-            background-color: #007bff;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .option-button:hover {
-            background-color: #0056b3;
-            transform: scale(1.02);
-        }
-
-        .correct-answer {
-            background-color: #28a745 !important;
-            transform: scale(1.1);
-            box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
-        }
-
-        .wrong-answer {
-            background-color: #dc3545 !important;
-            transform: scale(0.95);
-            opacity: 0.7;
-        }
-
-        @keyframes correctStreak {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
-        }
-
-        .streak-update {
-            animation: correctStreak 0.5s ease;
-            color: #28a745;
-        }
-
-        .timer {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            font-size: 24px;
-            background-color: #fff;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .streak {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            font-size: 24px;
-            background-color: #fff;
-            padding: 10px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .settings-button {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            padding: 15px 25px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .settings-modal {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            z-index: 1000;
-            min-width: 300px;
-        }
-
-        .modal-backdrop {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            z-index: 999;
-        }
-
-        .settings-group {
-            margin: 15px 0;
-        }
-
-        .settings-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-
-        .settings-group input {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 5px;
-        }
-
-        .settings-group .value-display {
-            text-align: center;
-            color: #666;
-        }
-
-        .modal-buttons {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .modal-buttons button {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .save-button {
-            background-color: #4CAF50;
-            color: white;
-        }
-
-        .cancel-button {
-            background-color: #dc3545;
-            color: white;
-        }
-    </style>
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-    <nav class="nav-bar">
-        <button onclick="window.location.href='/'" class="nav-button">Learning Mode</button>
-        <button onclick="window.location.href='/sp500-explorer'" class="nav-button">Explorer</button>
-        <button onclick="window.location.href='/sp500-ranking.html'" class="nav-button">Ranking</button>
-        <button onclick="window.location.href='/flash-quiz'" class="nav-button" disabled>Flash Quiz Mode</button>
-    </nav>
-    <div class="streak">Streak: <span id="streakCount">0</span></div>
-    <div class="timer">Time: <span id="timeLeft">5</span>s</div>
-    
-    <div class="flash-container">
-        <div class="flash-card" id="flashCard">
-            <div class="ticker"></div>
-            <div class="company-name"></div>
-            <div class="info"></div>
-            <div class="description"></div>
-        </div>
-        
-        <div class="quiz-container" id="quizContainer">
-            <h2 id="question"></h2>
-            <div class="options-grid" id="options"></div>
-        </div>
-    </div>
+    <!-- Navigation Bar will be loaded dynamically -->
+    <div id="navbar-container"></div>
 
-    <button onclick="openSettings()" class="settings-button">⚙️ Settings</button>
+    <!-- Sidebar will be loaded dynamically -->
+    <div id="sidebar-container"></div>
 
-    <div class="modal-backdrop" id="modalBackdrop"></div>
-    <div class="settings-modal" id="settingsModal">
-        <h2>Quiz Settings</h2>
+    <!-- Main Container -->
+    <div class="container">
+        <div class="streak">Streak: <span id="streakCount">0</span></div>
+        <div class="timer">Time: <span id="timeLeft">5</span>s</div>
         
-        <div class="settings-group">
-            <label for="flashDuration">Flash Card Duration (seconds)</label>
-            <input type="range" id="flashDuration" min="0.5" max="5" step="0.5" value="1">
-            <div class="value-display" id="flashDurationValue">1.0s</div>
+        <div class="flash-container">
+            <h1>Flash Quiz Mode</h1>
+            <div class="flash-card" id="flashCard">
+                <div class="ticker"></div>
+                <div class="company-name"></div>
+                <div class="info"></div>
+                <div class="description"></div>
+            </div>
+            <div class="quiz-container" id="quizContainer" style="display: none;">
+                <div id="question"></div>
+                <div class="options-grid" id="options"></div>
+                <div id="timer"></div>
+            </div>
+            <div class="score-container">
+                <div>Correct: <span id="correctCount">0</span></div>
+                <div>Total: <span id="totalCount">0</span></div>
+            </div>
         </div>
-        
-        <div class="settings-group">
-            <label for="answerDuration">Answer Time Limit (seconds)</label>
-            <input type="range" id="answerDuration" min="2" max="15" step="1" value="2">
-            <div class="value-display" id="answerDurationValue">2s</div>
-        </div>
-        
-        <div class="modal-buttons">
-            <button onclick="closeSettings()" class="cancel-button">Cancel</button>
-            <button onclick="saveSettings()" class="save-button">Save</button>
+
+        <button onclick="openSettings()" class="settings-button">⚙️ Settings</button>
+
+        <div class="modal-backdrop" id="modalBackdrop"></div>
+        <div class="settings-modal" id="settingsModal">
+            <h2>Quiz Settings</h2>
+            <div class="settings-group">
+                <label for="flashDuration">Flash Card Duration (seconds)</label>
+                <input type="range" id="flashDuration" min="0.5" max="5" step="0.5" value="1">
+                <div class="value-display" id="flashDurationValue">1.0s</div>
+            </div>
+            <div class="settings-group">
+                <label for="answerDuration">Answer Time Limit (seconds)</label>
+                <input type="range" id="answerDuration" min="2" max="15" step="1" value="2">
+                <div class="value-display" id="answerDurationValue">2s</div>
+            </div>
+            <div class="modal-buttons">
+                <button onclick="closeSettings()" class="cancel-button">Cancel</button>
+                <button onclick="saveSettings()" class="save-button">Save</button>
+            </div>
         </div>
     </div>
 
     <script>
+        console.log('Script starting...');
         let stockData = [];
         let currentStock = null;
         let streak = 0;
+        let correctCount = 0;
+        let totalCount = 0;
         let timer = null;
         let timeLeft = 0;
         
@@ -318,10 +94,19 @@
             60    // After 60 items
         ];
 
-        async function loadStocks() {
-            const response = await fetch('/stocks.json');
-            stockData = await response.json();
-            startQuiz();
+        async function loadStockData() {
+            console.log('Loading stock data...');
+            try {
+                const response = await fetch('/stocks.json');
+                console.log('Stock data response:', response.ok);
+                if (!response.ok) throw new Error('Failed to load stock data');
+                stockData = await response.json();
+                console.log('Stock data loaded:', stockData.length, 'items');
+                return stockData;
+            } catch (error) {
+                console.error('Error loading stock data:', error);
+                throw error;
+            }
         }
 
         function getRandomStocks(count, exclude = null) {
@@ -506,6 +291,7 @@
 
             if (isCorrect) {
                 streak++;
+                correctCount++;
                 const streakElement = document.getElementById('streakCount');
                 streakElement.classList.add('streak-update');
                 setTimeout(() => streakElement.classList.remove('streak-update'), 500);
@@ -513,7 +299,9 @@
                 streak = 0;
             }
             
+            totalCount++;
             updateStreak();
+            updateScore();
             
             const history = updateLearningHistory(questionId, isCorrect);
             const nextInterval = REVIEW_INTERVALS[history.level];
@@ -529,6 +317,11 @@
 
             // Longer delay to show the animation
             setTimeout(nextQuestion, 1500);
+        }
+
+        function updateScore() {
+            document.getElementById('correctCount').textContent = correctCount;
+            document.getElementById('totalCount').textContent = totalCount;
         }
 
         function nextQuestion() {
@@ -590,9 +383,6 @@
                 `${answerInput.value}s`;
         }
 
-        document.getElementById('flashDuration').addEventListener('input', updateSettingsDisplays);
-        document.getElementById('answerDuration').addEventListener('input', updateSettingsDisplays);
-
         // Add missing functions for multiple choice
         function generateOptions(questionItem, correctAnswer) {
             const wrongOptions = getRandomStocks(3, questionItem.stock).map(s => {
@@ -614,7 +404,54 @@
             ).join('');
         }
 
-        loadStocks();
+        // Initialize the page
+        async function initializePage() {
+            console.log('Initializing page...');
+            try {
+                // Load the navbar
+                const navResponse = await fetch('/navbar.html');
+                const navHtml = await navResponse.text();
+                document.getElementById('navbar-container').innerHTML = navHtml;
+                
+                // Set up flash quiz specific elements
+                document.getElementById('flashQuizBtn').disabled = true;
+                document.getElementById('pageTitle').textContent = 'Flash Quiz Mode';
+                
+                // Load the sidebar
+                const sideResponse = await fetch('/sidebar.html');
+                const sideHtml = await sideResponse.text();
+                document.getElementById('sidebar-container').innerHTML = sideHtml;
+                
+                // Wait for stock data before proceeding
+                await loadStockData();
+                
+                // Initialize quiz
+                initializeLearningQueue();
+                // Reset scores
+                correctCount = 0;
+                totalCount = 0;
+                streak = 0;
+                updateScore();
+                updateStreak();
+                nextQuestion();
+                
+                // Add event listeners for settings after elements exist
+                const flashDurationEl = document.getElementById('flashDuration');
+                const answerDurationEl = document.getElementById('answerDuration');
+                if (flashDurationEl) flashDurationEl.addEventListener('input', updateSettingsDisplays);
+                if (answerDurationEl) answerDurationEl.addEventListener('input', updateSettingsDisplays);
+
+                console.log('Initialization complete');
+            } catch (err) {
+                console.error('Error initializing page:', err);
+                document.querySelector('.flash-container').innerHTML = 
+                    '<div class="error">Error loading quiz. Please refresh the page.</div>';
+            }
+        }
+
+        // Start initialization
+        console.log('Starting initialization...');
+        initializePage();
     </script>
 </body>
 </html> 

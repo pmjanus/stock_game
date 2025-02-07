@@ -3,194 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <title>Stock Market Learning Game</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f0f2f5;
-        }
-        .game-container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .score {
-            font-size: 1.2em;
-            margin-bottom: 20px;
-        }
-        .question {
-            font-size: 1.1em;
-            margin-bottom: 15px;
-        }
-        input[type="text"] {
-            padding: 8px;
-            font-size: 1em;
-            margin-right: 10px;
-        }
-        button {
-            padding: 8px 15px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .answer-history {
-            margin-top: 20px;
-            display: flex;  
-            gap: 20px;
-        }
-        
-        .history-column {
-            flex: 1;
-            background-color: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .correct {
-            background-color: #e8f5e9;
-        }
-        
-        .incorrect {
-            background-color: #ffebee;
-        }
-        
-        .company-info {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #e3f2fd;
-            border-radius: 8px;
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        .show-answer {
-            background-color: #ff9800;
-            margin-left: 10px;
-        }
-        
-        .history-item {
-            margin: 5px 0;
-            padding: 8px;
-            border-radius: 4px;
-        }
-
-        .category-explorer {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .category-list {
-            margin: 10px 0;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .category-item {
-            margin: 5px 0;
-            padding: 5px;
-            cursor: pointer;
-        }
-
-        .category-item:hover {
-            background-color: #e9ecef;
-        }
-
-        .stock-list {
-            margin-left: 20px;
-            font-size: 0.9em;
-        }
-
-        .category-toggle {
-            background-color: #6c757d;
-            margin-top: 20px;
-        }
-
-        .nav-bar {
-            background: #ffffff;
-            padding: 10px 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-        .nav-button {
-            padding: 8px 16px;
-            background-color: #4CAF50;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-            margin: 0 5px;
-        }
-        .nav-button:hover {
-            background-color: #45a049;
-        }
-    </style>
+    <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-    <div class="nav-bar">
-        <div class="nav-links">
-            <button onclick="window.location.href='/'" class="nav-button">Learning Mode</button>
-            <button onclick="window.location.href='/sp500-explorer'" class="nav-button">Explorer</button>
-            <button onclick="window.location.href='/sp500-ranking.html'" class="nav-button">Ranking</button>
-            <button onclick="window.location.href='/flash-quiz'" class="nav-button">Flash Quiz Mode</button>
-        </div>
-    </div>
-    <div class="game-container">
-        <h1>Stock Market Learning Game</h1>
-        <div class="score">Score: <span id="score">0</span></div>
-        <div class="question" id="question"></div>
-        <input type="text" id="answer" placeholder="Enter ticker symbol">
-        <button onclick="checkAnswer()">Submit</button>
-        <button onclick="showAnswer()" class="show-answer">Show Answer</button>
-        
-        <div class="company-info hidden" id="companyInfo">
-            <h3>Company Information</h3>
-            <p id="companyDescription"></p>
-            <a id="yahooLink" href="#" target="_blank">View on Yahoo Finance</a>
-        </div>
+    <!-- Navigation Bar will be loaded dynamically -->
+    <div id="navbar-container"></div>
 
-        <div class="answer-history">
-            <div class="history-column">
-                <h3>Correct Answers</h3>
-                <div id="correctAnswers"></div>
-            </div>
-            <div class="history-column">
-                <h3>Incorrect Answers</h3>
-                <div id="incorrectAnswers"></div>
-            </div>
-        </div>
+    <!-- Sidebar will be loaded dynamically -->
+    <div id="sidebar-container"></div>
 
-        <button onclick="toggleCategoryExplorer()" class="category-toggle">
-            Toggle Category Explorer
-        </button>
-
-        <div class="category-explorer hidden" id="categoryExplorer">
-            <h3>Category Explorer</h3>
-            <div class="tabs">
-                <button onclick="showCategoryView('sector')">By Sector</button>
-                <button onclick="showCategoryView('industry')">By Industry</button>
+    <!-- Main Container -->
+    <div class="container">
+        <div class="game-container">
+            <h1>Stock Market Learning Game</h1>
+            <div class="score">Score: <span id="score">0</span></div>
+            <div class="question" id="question"></div>
+            <input type="text" id="answer" placeholder="Enter ticker symbol">
+            <button onclick="checkAnswer()">Submit</button>
+            <button onclick="showAnswer()" class="show-answer">Show Answer</button>
+            
+            <div class="company-info hidden" id="companyInfo">
+                <h3>Company Information</h3>
+                <p id="companyDescription"></p>
+                <a id="yahooLink" href="#" target="_blank">View on Yahoo Finance</a>
             </div>
-            <div id="categoryList" class="category-list"></div>
+
+            <div class="answer-history">
+                <div class="history-column">
+                    <h3>Correct Answers</h3>
+                    <div id="correctAnswers"></div>
+                </div>
+                <div class="history-column">
+                    <h3>Incorrect Answers</h3>
+                    <div id="incorrectAnswers"></div>
+                </div>
+            </div>
+
+            <button onclick="toggleCategoryExplorer()" class="category-toggle">
+                Toggle Category Explorer
+            </button>
+
+            <div class="category-explorer hidden" id="categoryExplorer">
+                <h3>Category Explorer</h3>
+                <div class="tabs">
+                    <button onclick="showCategoryView('sector')">By Sector</button>
+                    <button onclick="showCategoryView('industry')">By Industry</button>
+                </div>
+                <div id="categoryList" class="category-list"></div>
+            </div>
         </div>
     </div>
 
@@ -373,8 +235,28 @@
             generateQuestion();
         }
 
+        // Initialize the page
+        async function initializePage() {
+            try {
+                // Load the navbar
+                const navResponse = await fetch('/navbar.html');
+                const navHtml = await navResponse.text();
+                document.getElementById('navbar-container').innerHTML = navHtml;
+                
+                // Set up learning mode specific elements
+                document.getElementById('learningModeBtn').disabled = true;
+                document.getElementById('pageTitle').textContent = 'Learning Mode';
+                
+                // Initialize learning mode functionality
+                loadNextQuestion();
+            } catch (err) {
+                console.error('Error initializing page:', err);
+            }
+        }
+
         // Initialize the game
         fetchStockData();
+        initializePage();
     </script>
 </body>
 </html>

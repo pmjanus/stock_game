@@ -3,86 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
   <title>S&P 500 Ranking by Market Cap</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f0f2f5;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      text-align: center;
-      color: #2c3e50;
-    }
-    .ranking-container {
-      max-width: 800px;
-      margin: 20px auto;
-      background-color: #fff;
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .ranking-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    .ranking-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 8px;
-      border-bottom: 1px solid #ddd;
-    }
-    .ranking-item:last-child {
-      border-bottom: none;
-    }
-    .rank {
-      font-weight: bold;
-      color: #4CAF50;
-      width: 40px;
-    }
-    .company {
-      flex-grow: 1;
-      padding-left: 8px;
-    }
-    .market-cap {
-      font-weight: bold;
-      color: #007bff;
-      white-space: nowrap;
-    }
-    .nav-bar {
-      background: #ffffff;
-      padding: 10px 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      display: flex;
-      justify-content: center;
-      margin-bottom: 20px;
-    }
-    .nav-button {
-      padding: 8px 16px;
-      background-color: #4CAF50;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 1rem;
-      margin: 0 5px;
-    }
-    .nav-button:hover {
-      background-color: #45a049;
-    }
-  </style>
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-  <div class="nav-bar">
-    <div class="nav-links">
-      <button onclick="window.location.href='/'" class="nav-button">Learning Mode</button>
-      <button onclick="window.location.href='/sp500-explorer'" class="nav-button">Explorer</button>
-      <button onclick="window.location.href='/sp500-ranking.html'" class="nav-button" disabled>Ranking</button>
-      <button onclick="window.location.href='/flash-quiz'" class="nav-button">Flash Quiz Mode</button>
-    </div>
+  <!-- Navigation Bar will be loaded dynamically -->
+  <div id="navbar-container"></div>
+  <div class="data-status" id="dataStatus">
+    <div class="loading"></div>
+    Loading market data...
   </div>
   <h1>S&P 500 Ranking by Market Cap</h1>
   <div class="ranking-container">
@@ -90,6 +20,8 @@
       <li>Loading rankings...</li>
     </ul>
   </div>
+  <!-- Sidebar will be loaded dynamically from the shared sidebar file -->
+  <div id="sidebar-container"></div>
 
   <script>
     // Function for formatting market cap numbers
@@ -103,15 +35,95 @@
       }
     }
 
+    function calculateMarketStats(stocks) {
+      // List of known duplicate tickers
+      const duplicates = {
+        'GOOGL': 'GOOG',
+        'BRK.B': 'BRK.A',
+        'FOX': 'FOXA'
+      };
+
+      let totalMarketCap = 0;
+      let totalDailyChange = 0;
+      const processedTickers = new Set();
+
+      stocks.forEach(stock => {
+        // Skip if this is a duplicate and we've already processed its pair
+        if (duplicates[stock.symbol] && processedTickers.has(duplicates[stock.symbol])) {
+          return;
+        }
+        if (Object.values(duplicates).includes(stock.symbol) && 
+          processedTickers.has(Object.keys(duplicates).find(key => duplicates[key] === stock.symbol))) {
+          return;
+        }
+
+        if (stock.marketCap) {
+          totalMarketCap += stock.marketCap;
+          totalDailyChange += (stock.marketCap * (stock.priceChangePercent || 0));
+          processedTickers.add(stock.symbol);
+        }
+      });
+
+      const averageMarketCap = totalMarketCap / processedTickers.size;
+      const dailyChangePercent = (totalDailyChange / totalMarketCap) * 100;
+
+      return {
+        totalMarketCap,
+        averageMarketCap,
+        dailyChangePercent
+      };
+    }
+
     async function loadRankings() {
+      const statusDiv = document.getElementById('dataStatus');
       try {
+        // Check server status first
+        const statusResponse = await fetch('/market-cap-status');
+        const status = await statusResponse.json();
+
+        if (status.isUpdating) {
+          statusDiv.innerHTML = `
+            <div class="loading"></div>
+            Server is currently updating market cap data...
+          `;
+        }
+
+        // Continue with loading stocks
         const response = await fetch('/stocks.json');
         const stocks = await response.json();
+
+        // Calculate market stats
+        const stats = calculateMarketStats(stocks);
+        
+        // Update sidebar
+        document.getElementById('totalMarketCap').textContent = formatMarketCap(stats.totalMarketCap);
+        document.getElementById('averageMarketCap').textContent = formatMarketCap(stats.averageMarketCap);
+        
+        const changeSign = stats.dailyChangePercent >= 0 ? '+' : '';
+        const changeClass = stats.dailyChangePercent >= 0 ? 'positive' : 'negative';
+        document.getElementById('totalDailyChange').innerHTML = 
+          `<span class="${changeClass}">${changeSign}${stats.dailyChangePercent.toFixed(2)}%</span>`;
 
         // Filter out stocks for which market cap is not provided
         const stocksWithMarketCap = stocks.filter(stock => stock.marketCap);
         // Sort stocks in descending order by market cap
         stocksWithMarketCap.sort((a, b) => b.marketCap - a.marketCap);
+
+        const hasMarketCap = stocksWithMarketCap.length > 0;
+
+        if (hasMarketCap) {
+          const timeString = new Date(status.lastUpdate).toLocaleString();
+          statusDiv.innerHTML = `
+            <span style="color: #4CAF50;">✓</span>
+            Market data loaded (Last updated: ${timeString})
+          `;
+          document.getElementById('lastUpdated').textContent = timeString;
+        } else {
+          statusDiv.innerHTML = `
+            <span style="color: #dc3545;">⚠</span>
+            Market cap data not available
+          `;
+        }
 
         const rankingList = document.getElementById('rankingList');
         rankingList.innerHTML = ''; // Clear initial content
@@ -130,11 +142,33 @@
         });
       } catch (error) {
         console.error('Error loading rankings:', error);
+        statusDiv.innerHTML = `
+          <span style="color: #dc3545;">✗</span>
+          Error loading market data
+        `;
         document.getElementById('rankingList').innerHTML = '<li>Error loading rankings.</li>';
       }
     }
 
     loadRankings();
+
+    // Load the shared sidebar HTML and insert it into the placeholder container
+    fetch('/sidebar.html')
+      .then(response => response.text())
+      .then(html => {
+          document.getElementById('sidebar-container').innerHTML = html;
+      })
+      .catch(err => console.error('Error loading sidebar:', err));
+
+    // After loading data
+    fetch('/navbar.html')
+      .then(response => response.text())
+      .then(html => {
+        document.getElementById('navbar-container').innerHTML = html;
+        document.getElementById('rankingBtn').disabled = true;
+        document.getElementById('pageTitle').textContent = 'S&P 500 Ranking';
+      })
+      .catch(err => console.error('Error loading navbar:', err));
   </script>
 </body>
 </html> 
