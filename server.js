@@ -35,7 +35,7 @@ const UPDATE_INTERVAL = 20 * 60 * 1000; // 20 minutes in milliseconds
 async function fetchMarketCap(symbol) {
     try {
         const queryOptions = { modules: ['price', 'summaryDetail'] };
-        const result = await yahooFinance.quoteSummary(symbol, queryOptions);
+        const result = await yahooFinance.quoteSummary(symbol.replace(/\./g, '-'), queryOptions);
         
         // Log the price data to see what we're getting
         console.log(`${symbol} price data:`, {
